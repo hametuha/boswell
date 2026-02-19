@@ -4,6 +4,8 @@
  * Plugin URI:  https://github.com/hametuha/boswell
  * Description: Enrich your WordPress blog contents with AI-powered assistant.
  * Version:     0.1.0
+ * Requires at least: 6.5
+ * Requires PHP: 8.1
  * Author:      Fumiki Takahashi
  * Author URI:  https://takahashifumiki.com
  * License:     GPL-3.0-or-later

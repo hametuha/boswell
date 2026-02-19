@@ -1,0 +1,14 @@
+{
+	"name": "boswell",
+	"private": true,
+	"scripts": {
+		"prepare": "husky"
+	},
+	"lint-staged": {
+		"*.php": "composer lint"
+	},
+	"devDependencies": {
+		"husky": "^9.1.7",
+		"lint-staged": "^16.2.7"
+	}
+}

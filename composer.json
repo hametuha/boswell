@@ -1,0 +1,21 @@
+{
+	"name": "hametuha/boswell",
+	"description": "Enrich your WordPress blog contents with AI-powered assistant.",
+	"type": "wordpress-plugin",
+	"license": "GPL-3.0-or-later",
+	"require": {
+		"php": ">=8.1"
+	},
+	"require-dev": {
+		"wp-coding-standards/wpcs": "^3.0"
+	},
+	"config": {
+		"allow-plugins": {
+			"dealerdirect/phpcodesniffer-composer-installer": true
+		}
+	},
+	"scripts": {
+		"lint": "phpcs --standard=phpcs.ruleset.xml",
+		"fix": "phpcbf --standard=phpcs.ruleset.xml"
+	}
+}
