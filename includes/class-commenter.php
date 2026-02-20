@@ -17,9 +17,10 @@ class Boswell_Commenter {
 	 *
 	 * @param int    $post_id    The post ID to comment on.
 	 * @param string $persona_id The persona ID to comment as.
+	 * @param int    $parent_id  Optional parent comment ID for replies.
 	 * @return WP_Comment|WP_Error The comment object on success, WP_Error on failure.
 	 */
-	public static function comment( int $post_id, string $persona_id ) {
+	public static function comment( int $post_id, string $persona_id, int $parent_id = 0 ) {
 		if ( ! class_exists( 'WordPress\AI_Client\AI_Client' ) ) {
 			return new WP_Error( 'boswell_ai_client_missing', __( 'wp-ai-client is not available.', 'boswell' ) );
 		}
@@ -45,10 +46,19 @@ class Boswell_Commenter {
 		// 4. Build system instruction (persona + memory).
 		$system = self::build_system_instruction( $persona );
 
-		// 5. Build user prompt (post content + existing comments).
-		$prompt = self::build_prompt( $post );
+		// 5. Resolve parent comment for replies.
+		$parent = null;
+		if ( $parent_id > 0 ) {
+			$parent = get_comment( $parent_id );
+			if ( ! $parent || (int) $parent->comment_post_ID !== $post->ID ) {
+				return new WP_Error( 'boswell_parent_not_found', __( 'Parent comment not found on this post.', 'boswell' ) );
+			}
+		}
 
-		// 6. Generate comment text via AI.
+		// 6. Build user prompt (post content + existing comments).
+		$prompt = self::build_prompt( $post, $parent );
+
+		// 7. Generate comment text via AI.
 		try {
 			$comment_text = WordPress\AI_Client\AI_Client::prompt( $prompt )
 				->using_provider( $persona['provider'] )
@@ -64,38 +74,57 @@ class Boswell_Commenter {
 			return new WP_Error( 'boswell_empty_comment', __( 'AI returned an empty comment.', 'boswell' ) );
 		}
 
-		// 7. Insert comment as the persona's linked user.
-		$comment_id = wp_insert_comment(
-			array(
-				'comment_post_ID'      => $post->ID,
-				'comment_content'      => $comment_text,
-				'comment_author'       => $user->display_name,
-				'comment_author_email' => $user->user_email,
-				'comment_author_url'   => $user->user_url,
-				'user_id'              => $user->ID,
-				'comment_approved'     => 1,
-			)
+		// 8. Insert comment as the persona's linked user.
+		$comment_data = array(
+			'comment_post_ID'      => $post->ID,
+			'comment_content'      => $comment_text,
+			'comment_author'       => $user->display_name,
+			'comment_author_email' => $user->user_email,
+			'comment_author_url'   => $user->user_url,
+			'user_id'              => $user->ID,
+			'comment_approved'     => 1,
 		);
+		if ( $parent ) {
+			$comment_data['comment_parent'] = $parent->comment_ID;
+		}
+		$comment_id = wp_insert_comment( $comment_data );
 
 		if ( ! $comment_id ) {
 			return new WP_Error( 'boswell_insert_failed', __( 'Failed to insert comment.', 'boswell' ) );
 		}
 
-		// 8. Update memory.
+		// 9. Update memory.
 		$title = $post->post_title;
-		Boswell_Memory::append_entry(
-			'recent_activities',
-			sprintf( 'Commented on "%s" (post #%d)', $title, $post->ID )
-		);
-		Boswell_Memory::append_entry(
-			'commentary_log',
-			sprintf(
-				'Post #%d "%s": %s',
-				$post->ID,
-				$title,
-				mb_strimwidth( $comment_text, 0, 100, '...' )
-			)
-		);
+		if ( $parent ) {
+			Boswell_Memory::append_entry(
+				'recent_activities',
+				sprintf( 'Replied to %s on "%s" (post #%d)', $parent->comment_author, $title, $post->ID )
+			);
+			Boswell_Memory::append_entry(
+				'commentary_log',
+				sprintf(
+					'Post #%d "%s" (reply to %s): %s',
+					$post->ID,
+					$title,
+					$parent->comment_author,
+					mb_strimwidth( $comment_text, 0, 100, '...' )
+				)
+			);
+		} else {
+			Boswell_Memory::append_entry(
+				'recent_activities',
+				sprintf( 'Commented on "%s" (post #%d)', $title, $post->ID )
+			);
+			Boswell_Memory::append_entry(
+				'commentary_log',
+				sprintf(
+					'Post #%d "%s": %s',
+					$post->ID,
+					$title,
+					mb_strimwidth( $comment_text, 0, 100, '...' )
+				)
+			);
+		}
 
 		return get_comment( $comment_id );
 	}
@@ -115,10 +144,11 @@ class Boswell_Commenter {
 		}
 
 		$parts[] = "---\n\n## Instructions\n\n"
-			. "You are about to read a blog post. Write a comment on it as this persona.\n"
+			. "You are about to read a blog post. Write a comment (or reply) on it as this persona.\n"
 			. "- Write naturally in the persona's voice and language style.\n"
 			. "- Reference your memory if relevant, but don't force it.\n"
 			. "- Keep the comment concise (1-3 paragraphs).\n"
+			. "- If you are replying to someone, address their points directly.\n"
 			. '- Do NOT include any metadata, headers, or labels — just the comment text.';
 
 		return implode( "\n\n", $parts );
@@ -127,10 +157,11 @@ class Boswell_Commenter {
 	/**
 	 * Build the user prompt from post content and existing comments.
 	 *
-	 * @param WP_Post $post The post object.
+	 * @param WP_Post         $post   The post object.
+	 * @param WP_Comment|null $parent Parent comment when replying, or null.
 	 * @return string
 	 */
-	private static function build_prompt( WP_Post $post ): string {
+	private static function build_prompt( WP_Post $post, ?WP_Comment $parent = null ): string {
 		$content = wp_strip_all_tags( $post->post_content );
 		// Truncate very long posts to stay within reasonable token limits.
 		$content = mb_strimwidth( $content, 0, 5000, '...' );
@@ -160,6 +191,16 @@ class Boswell_Commenter {
 					wp_strip_all_tags( $c->comment_content )
 				);
 			}
+		}
+
+		if ( $parent ) {
+			$parts[] = "\n---\n\n## You Are Replying To\n";
+			$parts[] = sprintf(
+				"**%s** (%s):\n%s\n\nWrite your reply to this comment.",
+				$parent->comment_author,
+				$parent->comment_date,
+				wp_strip_all_tags( $parent->comment_content )
+			);
 		}
 
 		return implode( "\n", $parts );

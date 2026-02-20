@@ -25,9 +25,13 @@ class Boswell_CLI extends WP_CLI_Command {
 	 * --persona=<persona_id>
 	 * : The persona ID to use.
 	 *
+	 * [--parent=<comment_id>]
+	 * : Reply to this comment instead of posting a top-level comment.
+	 *
 	 * ## EXAMPLES
 	 *
 	 *     wp boswell comment 42 --persona=persona
+	 *     wp boswell comment 42 --persona=persona --parent=4
 	 *
 	 * @param array<int, string>    $args       Positional arguments.
 	 * @param array<string, string> $assoc_args Named arguments.
@@ -35,10 +39,15 @@ class Boswell_CLI extends WP_CLI_Command {
 	public function comment( array $args, array $assoc_args ): void {
 		$post_id    = (int) $args[0];
 		$persona_id = $assoc_args['persona'];
+		$parent_id  = (int) ( $assoc_args['parent'] ?? 0 );
 
-		WP_CLI::log( sprintf( 'Generating comment for post #%d as "%s"...', $post_id, $persona_id ) );
+		if ( $parent_id > 0 ) {
+			WP_CLI::log( sprintf( 'Replying to comment #%d on post #%d as "%s"...', $parent_id, $post_id, $persona_id ) );
+		} else {
+			WP_CLI::log( sprintf( 'Generating comment for post #%d as "%s"...', $post_id, $persona_id ) );
+		}
 
-		$result = Boswell_Commenter::comment( $post_id, $persona_id );
+		$result = Boswell_Commenter::comment( $post_id, $persona_id, $parent_id );
 
 		if ( is_wp_error( $result ) ) {
 			WP_CLI::error( $result->get_error_message() );
