@@ -4,16 +4,28 @@
 	"type": "wordpress-plugin",
 	"license": "GPL-3.0-or-later",
 	"require": {
-		"php": ">=8.1"
+		"php": ">=8.1",
+		"wordpress/wp-ai-client": "^0.3.0",
+		"wordpress/anthropic-ai-provider": "^1.0"
 	},
 	"require-dev": {
+		"johnpbloch/wordpress": "6.9",
 		"wp-coding-standards/wpcs": "^3.0",
 		"phpunit/phpunit": "^9.0",
 		"yoast/phpunit-polyfills": "^4.0"
 	},
 	"config": {
 		"allow-plugins": {
-			"dealerdirect/phpcodesniffer-composer-installer": true
+			"dealerdirect/phpcodesniffer-composer-installer": true,
+			"johnpbloch/wordpress-core-installer": true
+		}
+	},
+	"extra": {
+		"wordpress-install-dir": "wp",
+		"installer-paths": {
+			"plugins/{$name}/": [
+				"type:wordpress-plugin"
+			]
 		}
 	},
 	"scripts": {

@@ -107,6 +107,7 @@ class Boswell_REST_Controller extends WP_REST_Controller {
 		return new WP_REST_Response(
 			array(
 				'memory'     => Boswell_Memory::get(),
+				'persona'    => Boswell_Settings::get_persona(),
 				'updated_at' => Boswell_Memory::get_updated_at(),
 				'sections'   => array_keys( Boswell_Memory::SECTIONS ),
 			)

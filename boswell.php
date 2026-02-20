@@ -17,9 +17,25 @@
 
 defined( 'ABSPATH' ) || exit;
 
+// Composer autoloader (wp-ai-client, providers, etc.).
+if ( file_exists( __DIR__ . '/vendor/autoload.php' ) ) {
+	require_once __DIR__ . '/vendor/autoload.php';
+}
+
 // Load classes.
 require_once __DIR__ . '/includes/class-memory.php';
 require_once __DIR__ . '/includes/class-rest-controller.php';
+require_once __DIR__ . '/includes/class-settings.php';
+
+// Initialize wp-ai-client (will be unnecessary after WordPress 7.0).
+if ( class_exists( 'WordPress\AI_Client\AI_Client' ) ) {
+	add_action( 'init', array( 'WordPress\AI_Client\AI_Client', 'init' ) );
+}
+
+// Admin settings page.
+if ( is_admin() ) {
+	Boswell_Settings::init();
+}
 
 /**
  * Register REST API routes.
