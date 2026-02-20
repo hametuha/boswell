@@ -91,6 +91,77 @@ class Boswell_CLI extends WP_CLI_Command {
 
 		WP_CLI\Utils\format_items( 'table', $items, array( 'id', 'name', 'user', 'provider' ) );
 	}
+
+	/**
+	 * Auto-select a post and comment on it (same logic as cron).
+	 *
+	 * If --persona is given, runs for that persona only.
+	 * Otherwise, runs for all personas with auto-commenting enabled.
+	 *
+	 * ## OPTIONS
+	 *
+	 * [--persona=<persona_id>]
+	 * : Run for a specific persona. If omitted, runs all cron-enabled personas.
+	 *
+	 * ## EXAMPLES
+	 *
+	 *     wp boswell run
+	 *     wp boswell run --persona=persona
+	 *
+	 * @param array<int, string>    $args       Positional arguments.
+	 * @param array<string, string> $assoc_args Named arguments.
+	 */
+	public function run( array $args, array $assoc_args ): void {
+		$persona_id = $assoc_args['persona'] ?? '';
+
+		if ( ! empty( $persona_id ) ) {
+			// Single persona mode.
+			self::run_single( $persona_id );
+			return;
+		}
+
+		// Run all cron-enabled personas.
+		$personas = Boswell_Persona::get_all();
+		$enabled  = array_filter( $personas, fn( $p ) => ! empty( $p['cron_enabled'] ) );
+
+		if ( empty( $enabled ) ) {
+			WP_CLI::error( 'No personas with auto-commenting enabled. Use --persona or enable cron on a persona.' );
+		}
+
+		foreach ( $enabled as $p ) {
+			self::run_single( $p['id'] );
+		}
+	}
+
+	/**
+	 * Run auto-comment for a single persona and display the result.
+	 *
+	 * @param string $persona_id Persona ID.
+	 */
+	private static function run_single( string $persona_id ): void {
+		WP_CLI::log( sprintf( 'Running auto-comment as "%s"...', $persona_id ) );
+
+		$result = Boswell_Cron::run( $persona_id );
+
+		if ( is_wp_error( $result ) ) {
+			WP_CLI::warning( sprintf( '[%s] %s', $persona_id, $result->get_error_message() ) );
+			return;
+		}
+
+		$post = get_post( $result->comment_post_ID );
+		WP_CLI::success(
+			sprintf(
+				'Comment #%d posted on "%s" (post #%d) by %s:',
+				$result->comment_ID,
+				$post ? $post->post_title : '(unknown)',
+				$result->comment_post_ID,
+				$result->comment_author
+			)
+		);
+		WP_CLI::log( '' );
+		WP_CLI::log( $result->comment_content );
+	}
+
 	/**
 	 * Show Boswell's memory, narrated by a persona.
 	 *

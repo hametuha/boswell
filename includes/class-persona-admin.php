@@ -68,6 +68,7 @@ class Boswell_Persona_Admin {
 		if ( 'POST' !== ( $_SERVER['REQUEST_METHOD'] ?? '' ) ) {
 			return;
 		}
+
 		if ( ! isset( $_POST['boswell_persona_nonce'] ) ) {
 			return;
 		}
@@ -79,10 +80,12 @@ class Boswell_Persona_Admin {
 		}
 
 		$data = array(
-			'name'     => sanitize_text_field( wp_unslash( $_POST['persona_name'] ?? '' ) ),
-			'persona'  => sanitize_textarea_field( wp_unslash( $_POST['persona_text'] ?? '' ) ),
-			'user_id'  => (int) ( $_POST['persona_user_id'] ?? 0 ),
-			'provider' => sanitize_text_field( wp_unslash( $_POST['persona_provider'] ?? '' ) ),
+			'name'           => sanitize_text_field( wp_unslash( $_POST['persona_name'] ?? '' ) ),
+			'persona'        => sanitize_textarea_field( wp_unslash( $_POST['persona_text'] ?? '' ) ),
+			'user_id'        => (int) ( $_POST['persona_user_id'] ?? 0 ),
+			'provider'       => sanitize_text_field( wp_unslash( $_POST['persona_provider'] ?? '' ) ),
+			'cron_enabled'   => ! empty( $_POST['cron_enabled'] ),
+			'cron_frequency' => sanitize_text_field( wp_unslash( $_POST['cron_frequency'] ?? 'daily' ) ),
 		);
 
 		$editing_id = sanitize_text_field( wp_unslash( $_POST['persona_id'] ?? '' ) );
@@ -179,6 +182,7 @@ class Boswell_Persona_Admin {
 							<th><?php esc_html_e( 'Name', 'boswell' ); ?></th>
 							<th><?php esc_html_e( 'User', 'boswell' ); ?></th>
 							<th><?php esc_html_e( 'Provider', 'boswell' ); ?></th>
+							<th><?php esc_html_e( 'Auto Comment', 'boswell' ); ?></th>
 							<th><?php esc_html_e( 'Actions', 'boswell' ); ?></th>
 						</tr>
 					</thead>
@@ -189,6 +193,13 @@ class Boswell_Persona_Admin {
 								<td><strong><?php echo esc_html( $p['name'] ); ?></strong><br><code><?php echo esc_html( $p['id'] ); ?></code></td>
 								<td><?php echo $user ? esc_html( $user->display_name ) : esc_html__( '(unknown)', 'boswell' ); ?></td>
 								<td><?php echo esc_html( $p['provider'] ); ?></td>
+								<td>
+									<?php if ( ! empty( $p['cron_enabled'] ) ) : ?>
+										<?php echo esc_html( $p['cron_frequency'] ?? 'daily' ); ?>
+									<?php else : ?>
+										&mdash;
+									<?php endif; ?>
+								</td>
 								<td>
 									<a href="<?php echo esc_url( self::form_url( 'edit', $p['id'] ) ); ?>">
 										<?php esc_html_e( 'Edit', 'boswell' ); ?>
@@ -218,11 +229,13 @@ class Boswell_Persona_Admin {
 	 */
 	private static function render_form( string $action ): void {
 		$persona = array(
-			'id'       => '',
-			'name'     => '',
-			'persona'  => '',
-			'user_id'  => 0,
-			'provider' => 'anthropic',
+			'id'             => '',
+			'name'           => '',
+			'persona'        => '',
+			'user_id'        => 0,
+			'provider'       => 'anthropic',
+			'cron_enabled'   => false,
+			'cron_frequency' => 'daily',
 		);
 
 		if ( 'edit' === $action ) {
@@ -282,6 +295,48 @@ class Boswell_Persona_Admin {
 						<td>
 							<textarea name="persona_text" id="persona_text" class="large-text code" rows="15"><?php echo esc_textarea( $persona['persona'] ); ?></textarea>
 							<p class="description"><?php esc_html_e( 'Write in Markdown. This text is passed to the AI as a system prompt.', 'boswell' ); ?></p>
+						</td>
+					</tr>
+					<tr>
+						<th><?php esc_html_e( 'Auto Comment', 'boswell' ); ?></th>
+						<td>
+							<label>
+								<input type="checkbox" name="cron_enabled" value="1" <?php checked( $persona['cron_enabled'] ); ?>>
+								<?php esc_html_e( 'Automatically comment on posts', 'boswell' ); ?>
+							</label>
+						</td>
+					</tr>
+					<tr>
+						<th><label for="cron_frequency"><?php esc_html_e( 'Frequency', 'boswell' ); ?></label></th>
+						<td>
+							<?php
+							$frequencies = array(
+								'hourly'     => __( 'Hourly', 'boswell' ),
+								'twicedaily' => __( 'Twice Daily', 'boswell' ),
+								'daily'      => __( 'Daily', 'boswell' ),
+							);
+							?>
+							<select name="cron_frequency" id="cron_frequency">
+								<?php foreach ( $frequencies as $value => $label ) : ?>
+									<option value="<?php echo esc_attr( $value ); ?>" <?php selected( $persona['cron_frequency'], $value ); ?>>
+										<?php echo esc_html( $label ); ?>
+									</option>
+								<?php endforeach; ?>
+							</select>
+							<?php
+							$next = wp_next_scheduled( Boswell_Cron::HOOK_NAME, array( $persona['id'] ) );
+							if ( $next ) :
+								?>
+								<p class="description">
+									<?php
+									printf(
+										/* translators: %s: next run datetime */
+										esc_html__( 'Next scheduled run: %s', 'boswell' ),
+										esc_html( get_date_from_gmt( gmdate( 'Y-m-d H:i:s', $next ), 'Y-m-d H:i:s' ) )
+									);
+									?>
+								</p>
+							<?php endif; ?>
 						</td>
 					</tr>
 				</table>

@@ -75,6 +75,10 @@ class Boswell_Persona {
 		}
 
 		update_option( self::OPTION_KEY, $personas, false );
+
+		// Reschedule cron for this persona.
+		Boswell_Cron::reschedule( $id );
+
 		return $id;
 	}
 
@@ -94,6 +98,10 @@ class Boswell_Persona {
 
 		array_splice( $personas, $index, 1 );
 		update_option( self::OPTION_KEY, $personas, false );
+
+		// Remove cron schedule for deleted persona.
+		Boswell_Cron::unschedule( $id );
+
 		return true;
 	}
 
@@ -237,12 +245,16 @@ class Boswell_Persona {
 	 * @return array<string, mixed>
 	 */
 	private static function normalize( array $data, string $id ): array {
+		$frequency = $data['cron_frequency'] ?? 'daily';
+
 		return array(
-			'id'       => $id,
-			'name'     => sanitize_text_field( $data['name'] ),
-			'persona'  => sanitize_textarea_field( $data['persona'] ),
-			'user_id'  => (int) $data['user_id'],
-			'provider' => sanitize_text_field( $data['provider'] ),
+			'id'             => $id,
+			'name'           => sanitize_text_field( $data['name'] ),
+			'persona'        => sanitize_textarea_field( $data['persona'] ),
+			'user_id'        => (int) $data['user_id'],
+			'provider'       => sanitize_text_field( $data['provider'] ),
+			'cron_enabled'   => ! empty( $data['cron_enabled'] ),
+			'cron_frequency' => in_array( $frequency, Boswell_Cron::FREQUENCIES, true ) ? $frequency : 'daily',
 		);
 	}
 }

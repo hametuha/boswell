@@ -27,6 +27,7 @@ require_once __DIR__ . '/includes/class-memory.php';
 require_once __DIR__ . '/includes/class-persona.php';
 require_once __DIR__ . '/includes/class-persona-admin.php';
 require_once __DIR__ . '/includes/class-commenter.php';
+require_once __DIR__ . '/includes/class-cron.php';
 require_once __DIR__ . '/includes/class-rest-controller.php';
 require_once __DIR__ . '/includes/class-cli.php';
 
@@ -49,6 +50,9 @@ if ( class_exists( 'WordPress\AI_Client\AI_Client' ) ) {
 		}
 	);
 }
+
+// Cron handler.
+Boswell_Cron::init();
 
 // Admin settings page.
 if ( is_admin() ) {
@@ -81,6 +85,11 @@ register_activation_hook(
 );
 
 /**
+ * Unschedule cron on deactivation.
+ */
+register_deactivation_hook( __FILE__, array( 'Boswell_Cron', 'unschedule' ) );
+
+/**
  * Clean up options on uninstall.
  */
 register_uninstall_hook( __FILE__, 'boswell_uninstall' );
@@ -91,4 +100,5 @@ register_uninstall_hook( __FILE__, 'boswell_uninstall' );
 function boswell_uninstall(): void {
 	Boswell_Memory::uninstall();
 	Boswell_Persona::uninstall();
+	Boswell_Cron::uninstall();
 }
