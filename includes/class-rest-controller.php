@@ -25,6 +25,27 @@ class Boswell_REST_Controller extends WP_REST_Controller {
 	 * Register routes.
 	 */
 	public function register_routes(): void {
+		// POST /ping
+		register_rest_route(
+			$this->namespace,
+			'/ping',
+			array(
+				array(
+					'methods'             => WP_REST_Server::CREATABLE,
+					'callback'            => array( $this, 'ping' ),
+					'permission_callback' => array( $this, 'check_permission' ),
+					'args'                => array(
+						'provider' => array(
+							'type'              => 'string',
+							'description'       => 'Provider ID (e.g. anthropic, openai, google).',
+							'default'           => 'anthropic',
+							'sanitize_callback' => 'sanitize_text_field',
+						),
+					),
+				),
+			)
+		);
+
 		// GET/PUT /memory
 		register_rest_route(
 			$this->namespace,
@@ -95,6 +116,53 @@ class Boswell_REST_Controller extends WP_REST_Controller {
 			);
 		}
 		return true;
+	}
+
+	/**
+	 * POST /ping — Test AI connectivity with persona.
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function ping( WP_REST_Request $request ) {
+		if ( ! class_exists( 'WordPress\AI_Client\AI_Client' ) ) {
+			return new WP_Error(
+				'boswell_ai_client_missing',
+				__( 'wp-ai-client is not available.', 'boswell' ),
+				array( 'status' => 500 )
+			);
+		}
+
+		$provider = $request->get_param( 'provider' );
+		$persona  = Boswell_Settings::get_persona();
+		if ( empty( $persona ) ) {
+			return new WP_Error(
+				'boswell_no_persona',
+				__( 'Persona is not configured. Set it in Settings > Boswell.', 'boswell' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		try {
+			$text = WordPress\AI_Client\AI_Client::prompt( 'Introduce yourself in one sentence.' )
+				->using_provider( $provider )
+				->using_system_instruction( $persona )
+				->using_max_tokens( 200 )
+				->generate_text();
+		} catch ( \Exception $e ) {
+			return new WP_Error(
+				'boswell_ping_failed',
+				$e->getMessage(),
+				array( 'status' => 502 )
+			);
+		}
+
+		return new WP_REST_Response(
+			array(
+				'provider' => $provider,
+				'response' => $text,
+			)
+		);
 	}
 
 	/**

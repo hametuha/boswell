@@ -30,13 +30,28 @@ class Boswell_Settings {
 	 * Add options page under Settings menu.
 	 */
 	public static function add_menu(): void {
-		add_options_page(
+		$hook = add_options_page(
 			__( 'Boswell Settings', 'boswell' ),
 			__( 'Boswell', 'boswell' ),
 			'manage_options',
 			self::PAGE_SLUG,
 			array( __CLASS__, 'render_page' )
 		);
+		if ( $hook ) {
+			add_action( 'admin_enqueue_scripts', array( __CLASS__, 'enqueue_scripts' ) );
+		}
+	}
+
+	/**
+	 * Enqueue scripts on the Boswell settings page.
+	 *
+	 * @param string $hook_suffix The current admin page hook suffix.
+	 */
+	public static function enqueue_scripts( string $hook_suffix ): void {
+		if ( 'settings_page_' . self::PAGE_SLUG !== $hook_suffix ) {
+			return;
+		}
+		wp_enqueue_script( 'wp-api-fetch' );
 	}
 
 	/**
@@ -101,6 +116,7 @@ class Boswell_Settings {
 	 * Render the settings page.
 	 */
 	public static function render_page(): void {
+		$providers = array( 'anthropic', 'openai', 'google' );
 		?>
 		<div class="wrap">
 			<h1><?php esc_html_e( 'Boswell Settings', 'boswell' ); ?></h1>
@@ -111,7 +127,56 @@ class Boswell_Settings {
 				submit_button();
 				?>
 			</form>
+			<hr>
+			<h2><?php esc_html_e( 'Connectivity Test', 'boswell' ); ?></h2>
+			<p><?php esc_html_e( 'Send a test prompt using the persona above. Make sure to save your persona and set AI credentials first.', 'boswell' ); ?></p>
+			<p>
+				<label for="boswell-ping-provider"><?php esc_html_e( 'Provider:', 'boswell' ); ?></label>
+				<select id="boswell-ping-provider">
+					<?php foreach ( $providers as $pid ) : ?>
+						<option value="<?php echo esc_attr( $pid ); ?>"><?php echo esc_html( $pid ); ?></option>
+					<?php endforeach; ?>
+				</select>
+				<button type="button" id="boswell-ping-btn" class="button button-secondary">
+					<?php esc_html_e( 'Test', 'boswell' ); ?>
+				</button>
+				<span id="boswell-ping-spinner" class="spinner" style="float:none;"></span>
+			</p>
+			<div id="boswell-ping-result" style="display:none;margin-top:12px;">
+				<textarea class="large-text" rows="4" readonly></textarea>
+			</div>
 		</div>
+		<script>
+		(function() {
+			var btn     = document.getElementById('boswell-ping-btn');
+			var sel     = document.getElementById('boswell-ping-provider');
+			var spinner = document.getElementById('boswell-ping-spinner');
+			var result  = document.getElementById('boswell-ping-result');
+			var output  = result.querySelector('textarea');
+
+			btn.addEventListener('click', function() {
+				btn.disabled = true;
+				spinner.classList.add('is-active');
+				result.style.display = 'none';
+				output.value = '';
+
+				wp.apiFetch({
+					path: '/boswell/v1/ping',
+					method: 'POST',
+					data: { provider: sel.value }
+				}).then(function(res) {
+					output.value = '[' + res.provider + '] ' + res.response;
+					result.style.display = '';
+				}).catch(function(err) {
+					output.value = 'Error: ' + (err.message || err.code || 'Unknown error');
+					result.style.display = '';
+				}).finally(function() {
+					btn.disabled = false;
+					spinner.classList.remove('is-active');
+				});
+			});
+		})();
+		</script>
 		<?php
 	}
 

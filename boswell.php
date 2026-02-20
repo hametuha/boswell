@@ -27,9 +27,24 @@ require_once __DIR__ . '/includes/class-memory.php';
 require_once __DIR__ . '/includes/class-rest-controller.php';
 require_once __DIR__ . '/includes/class-settings.php';
 
-// Initialize wp-ai-client (will be unnecessary after WordPress 7.0).
+// Register AI providers and initialize wp-ai-client (will be unnecessary after WordPress 7.0).
 if ( class_exists( 'WordPress\AI_Client\AI_Client' ) ) {
-	add_action( 'init', array( 'WordPress\AI_Client\AI_Client', 'init' ) );
+	add_action(
+		'init',
+		function () {
+			// Set up HTTP discovery first so providers can create their HTTP transporter.
+			WordPress\AI_Client\HTTP\WP_AI_Client_Discovery_Strategy::init();
+
+			// Register providers (must happen before AI_Client::init() calls collect_providers).
+			$registry = WordPress\AiClient\AiClient::defaultRegistry();
+			$registry->registerProvider( WordPress\AnthropicAiProvider\Provider\AnthropicProvider::class );
+			$registry->registerProvider( WordPress\OpenAiAiProvider\Provider\OpenAiProvider::class );
+			$registry->registerProvider( WordPress\GoogleAiProvider\Provider\GoogleProvider::class );
+
+			// Initialize wp-ai-client (collects providers, passes credentials, adds admin screen).
+			WordPress\AI_Client\AI_Client::init();
+		}
+	);
 }
 
 // Admin settings page.
