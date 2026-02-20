@@ -2,14 +2,14 @@
 /**
  * Boswell REST Controller
  *
- * Exposes Boswell's memory via REST API for external access
+ * Exposes Boswell's personas and memory via REST API for external access
  * (e.g., from the MCP server via Application Passwords).
  *
  * @package Boswell
  */
 
 /**
- * REST API controller for memory endpoints.
+ * REST API controller for Boswell endpoints.
  */
 class Boswell_REST_Controller extends WP_REST_Controller {
 
@@ -25,6 +25,39 @@ class Boswell_REST_Controller extends WP_REST_Controller {
 	 * Register routes.
 	 */
 	public function register_routes(): void {
+		// GET /personas
+		register_rest_route(
+			$this->namespace,
+			'/personas',
+			array(
+				array(
+					'methods'             => WP_REST_Server::READABLE,
+					'callback'            => array( $this, 'get_personas' ),
+					'permission_callback' => array( $this, 'check_permission' ),
+				),
+			)
+		);
+
+		// GET /personas/{id}
+		register_rest_route(
+			$this->namespace,
+			'/personas/(?P<id>[a-z0-9-]+)',
+			array(
+				array(
+					'methods'             => WP_REST_Server::READABLE,
+					'callback'            => array( $this, 'get_persona' ),
+					'permission_callback' => array( $this, 'check_permission' ),
+					'args'                => array(
+						'id' => array(
+							'type'              => 'string',
+							'required'          => true,
+							'sanitize_callback' => 'sanitize_text_field',
+						),
+					),
+				),
+			)
+		);
+
 		// POST /ping
 		register_rest_route(
 			$this->namespace,
@@ -35,10 +68,10 @@ class Boswell_REST_Controller extends WP_REST_Controller {
 					'callback'            => array( $this, 'ping' ),
 					'permission_callback' => array( $this, 'check_permission' ),
 					'args'                => array(
-						'provider' => array(
+						'persona_id' => array(
 							'type'              => 'string',
-							'description'       => 'Provider ID (e.g. anthropic, openai, google).',
-							'default'           => 'anthropic',
+							'description'       => 'Persona ID to test with.',
+							'required'          => true,
 							'sanitize_callback' => 'sanitize_text_field',
 						),
 					),
@@ -111,7 +144,7 @@ class Boswell_REST_Controller extends WP_REST_Controller {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			return new WP_Error(
 				'rest_forbidden',
-				__( 'You do not have permission to access Boswell memory.', 'boswell' ),
+				__( 'You do not have permission to access Boswell.', 'boswell' ),
 				array( 'status' => 403 )
 			);
 		}
@@ -119,7 +152,35 @@ class Boswell_REST_Controller extends WP_REST_Controller {
 	}
 
 	/**
-	 * POST /ping — Test AI connectivity with persona.
+	 * GET /personas — List all personas.
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response
+	 */
+	public function get_personas( WP_REST_Request $request ): WP_REST_Response {
+		return new WP_REST_Response( Boswell_Persona::get_all() );
+	}
+
+	/**
+	 * GET /personas/{id} — Get a single persona.
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function get_persona( WP_REST_Request $request ) {
+		$persona = Boswell_Persona::get( $request->get_param( 'id' ) );
+		if ( ! $persona ) {
+			return new WP_Error(
+				'boswell_persona_not_found',
+				__( 'Persona not found.', 'boswell' ),
+				array( 'status' => 404 )
+			);
+		}
+		return new WP_REST_Response( $persona );
+	}
+
+	/**
+	 * POST /ping — Test AI connectivity with a persona.
 	 *
 	 * @param WP_REST_Request $request Request object.
 	 * @return WP_REST_Response|WP_Error
@@ -133,20 +194,20 @@ class Boswell_REST_Controller extends WP_REST_Controller {
 			);
 		}
 
-		$provider = $request->get_param( 'provider' );
-		$persona  = Boswell_Settings::get_persona();
-		if ( empty( $persona ) ) {
+		$persona_id = $request->get_param( 'persona_id' );
+		$persona    = Boswell_Persona::get( $persona_id );
+		if ( ! $persona ) {
 			return new WP_Error(
-				'boswell_no_persona',
-				__( 'Persona is not configured. Set it in Settings > Boswell.', 'boswell' ),
-				array( 'status' => 400 )
+				'boswell_persona_not_found',
+				__( 'Persona not found.', 'boswell' ),
+				array( 'status' => 404 )
 			);
 		}
 
 		try {
 			$text = WordPress\AI_Client\AI_Client::prompt( 'Introduce yourself in one sentence.' )
-				->using_provider( $provider )
-				->using_system_instruction( $persona )
+				->using_provider( $persona['provider'] )
+				->using_system_instruction( $persona['persona'] )
 				->using_max_tokens( 200 )
 				->generate_text();
 		} catch ( \Exception $e ) {
@@ -159,7 +220,7 @@ class Boswell_REST_Controller extends WP_REST_Controller {
 
 		return new WP_REST_Response(
 			array(
-				'provider' => $provider,
+				'provider' => $persona['provider'],
 				'response' => $text,
 			)
 		);
@@ -175,7 +236,6 @@ class Boswell_REST_Controller extends WP_REST_Controller {
 		return new WP_REST_Response(
 			array(
 				'memory'     => Boswell_Memory::get(),
-				'persona'    => Boswell_Settings::get_persona(),
 				'updated_at' => Boswell_Memory::get_updated_at(),
 				'sections'   => array_keys( Boswell_Memory::SECTIONS ),
 			)

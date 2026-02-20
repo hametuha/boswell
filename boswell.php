@@ -24,8 +24,11 @@ if ( file_exists( __DIR__ . '/vendor/autoload.php' ) ) {
 
 // Load classes.
 require_once __DIR__ . '/includes/class-memory.php';
+require_once __DIR__ . '/includes/class-persona.php';
+require_once __DIR__ . '/includes/class-persona-admin.php';
+require_once __DIR__ . '/includes/class-commenter.php';
 require_once __DIR__ . '/includes/class-rest-controller.php';
-require_once __DIR__ . '/includes/class-settings.php';
+require_once __DIR__ . '/includes/class-cli.php';
 
 // Register AI providers and initialize wp-ai-client (will be unnecessary after WordPress 7.0).
 if ( class_exists( 'WordPress\AI_Client\AI_Client' ) ) {
@@ -49,7 +52,7 @@ if ( class_exists( 'WordPress\AI_Client\AI_Client' ) ) {
 
 // Admin settings page.
 if ( is_admin() ) {
-	Boswell_Settings::init();
+	Boswell_Persona_Admin::init();
 }
 
 /**
@@ -64,7 +67,7 @@ add_action(
 );
 
 /**
- * Initialize default memory on activation.
+ * Initialize defaults and run migrations on activation.
  */
 register_activation_hook(
 	__FILE__,
@@ -73,13 +76,19 @@ register_activation_hook(
 			update_option( Boswell_Memory::OPTION_KEY, Boswell_Memory::get_default(), false );
 			update_option( Boswell_Memory::UPDATED_AT_KEY, gmdate( 'c' ), false );
 		}
+		Boswell_Persona::migrate();
 	}
 );
 
 /**
  * Clean up options on uninstall.
  */
-register_uninstall_hook(
-	__FILE__,
-	array( 'Boswell_Memory', 'uninstall' )
-);
+register_uninstall_hook( __FILE__, 'boswell_uninstall' );
+
+/**
+ * Uninstall callback — remove all Boswell data.
+ */
+function boswell_uninstall(): void {
+	Boswell_Memory::uninstall();
+	Boswell_Persona::uninstall();
+}
