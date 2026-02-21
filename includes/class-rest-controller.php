@@ -132,6 +132,53 @@ class Boswell_REST_Controller extends WP_REST_Controller {
 				),
 			)
 		);
+
+		// POST /comment
+		register_rest_route(
+			$this->namespace,
+			'/comment',
+			array(
+				array(
+					'methods'             => WP_REST_Server::CREATABLE,
+					'callback'            => array( $this, 'create_comment' ),
+					'permission_callback' => array( $this, 'check_permission' ),
+					'args'                => array(
+						'persona_id' => array(
+							'required'          => true,
+							'type'              => 'string',
+							'description'       => 'Persona ID to comment as.',
+							'sanitize_callback' => 'sanitize_text_field',
+						),
+						'post_id'    => array(
+							'required'          => true,
+							'type'              => 'integer',
+							'description'       => 'Post ID to comment on.',
+							'sanitize_callback' => 'absint',
+						),
+						'parent_id'  => array(
+							'required'          => false,
+							'type'              => 'integer',
+							'default'           => 0,
+							'description'       => 'Parent comment ID for replies.',
+							'sanitize_callback' => 'absint',
+						),
+					),
+				),
+			)
+		);
+
+		// GET /context
+		register_rest_route(
+			$this->namespace,
+			'/context',
+			array(
+				array(
+					'methods'             => WP_REST_Server::READABLE,
+					'callback'            => array( $this, 'get_context' ),
+					'permission_callback' => array( $this, 'check_permission' ),
+				),
+			)
+		);
 	}
 
 	/**
@@ -290,6 +337,69 @@ class Boswell_REST_Controller extends WP_REST_Controller {
 				'memory'     => Boswell_Memory::get(),
 				'updated_at' => Boswell_Memory::get_updated_at(),
 				'section'    => $section,
+			)
+		);
+	}
+
+	/**
+	 * POST /comment — Generate an AI comment on a post.
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function create_comment( WP_REST_Request $request ) {
+		$persona_id = $request->get_param( 'persona_id' );
+		$post_id    = (int) $request->get_param( 'post_id' );
+		$parent_id  = (int) $request->get_param( 'parent_id' );
+
+		$result = Boswell_Commenter::comment( $post_id, $persona_id, $parent_id );
+
+		if ( is_wp_error( $result ) ) {
+			$status = 'boswell_post_not_found' === $result->get_error_code()
+				|| 'boswell_persona_not_found' === $result->get_error_code()
+				|| 'boswell_parent_not_found' === $result->get_error_code()
+				? 404 : 500;
+			return new WP_Error(
+				$result->get_error_code(),
+				$result->get_error_message(),
+				array( 'status' => $status )
+			);
+		}
+
+		return new WP_REST_Response(
+			array(
+				'comment_id' => (int) $result->comment_ID,
+				'content'    => $result->comment_content,
+				'post_id'    => (int) $result->comment_post_ID,
+				'author'     => $result->comment_author,
+			)
+		);
+	}
+
+	/**
+	 * GET /context — Site info, personas, and memory.
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response
+	 */
+	public function get_context( WP_REST_Request $request ): WP_REST_Response {
+		$personas = array_map(
+			function ( array $p ): array {
+				return array(
+					'id'      => $p['id'],
+					'name'    => $p['name'],
+					'persona' => $p['persona'],
+				);
+			},
+			Boswell_Persona::get_all()
+		);
+
+		return new WP_REST_Response(
+			array(
+				'site_name' => get_bloginfo( 'name' ),
+				'site_url'  => home_url(),
+				'personas'  => $personas,
+				'memory'    => Boswell_Memory::get(),
 			)
 		);
 	}
