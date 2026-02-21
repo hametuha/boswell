@@ -4,7 +4,7 @@
  * Plugin URI:  https://github.com/hametuha/boswell
  * Description: Enrich your WordPress blog contents with AI-powered assistant.
  * Version:     0.1.0
- * Requires at least: 6.5
+ * Requires at least: 6.8
  * Requires PHP: 8.1
  * Author:      Fumiki Takahashi
  * Author URI:  https://takahashifumiki.com
@@ -29,6 +29,7 @@ require_once __DIR__ . '/includes/class-persona-admin.php';
 require_once __DIR__ . '/includes/class-commenter.php';
 require_once __DIR__ . '/includes/class-cron.php';
 require_once __DIR__ . '/includes/class-rest-controller.php';
+require_once __DIR__ . '/includes/class-abilities.php';
 require_once __DIR__ . '/includes/class-cli.php';
 
 // Register AI providers and initialize wp-ai-client (will be unnecessary after WordPress 7.0).
@@ -49,6 +50,16 @@ if ( class_exists( 'WordPress\AI_Client\AI_Client' ) ) {
 			WordPress\AI_Client\AI_Client::init();
 		}
 	);
+}
+
+// MCP adapter (exposes Boswell abilities as MCP tools/resources/prompts).
+if ( class_exists( 'WP\MCP\Plugin' ) ) {
+	WP\MCP\Plugin::instance();
+}
+
+// Abilities API registration.
+if ( function_exists( 'wp_register_ability' ) ) {
+	Boswell_Abilities::init();
 }
 
 // Cron handler.
