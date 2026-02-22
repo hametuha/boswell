@@ -1,0 +1,17 @@
+# Packages
+/vendor/
+/node_modules/
+composer.lock
+package-lock.json
+
+# Extras
+.DS_Store
+*.cache
+
+# Build files
+/wp/
+
+# AI
+.claude/settings.local.json
+.mcp.json
+

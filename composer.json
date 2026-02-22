@@ -1,0 +1,46 @@
+{
+	"name": "hametuha/boswell",
+	"description": "Enrich your WordPress blog contents with AI-powered assistant.",
+	"type": "wordpress-plugin",
+	"license": "GPL-3.0-or-later",
+	"repositories": [
+		{ "type": "vcs", "url": "https://github.com/WordPress/wp-ai-client" },
+		{ "type": "vcs", "url": "https://github.com/WordPress/ai-provider-for-anthropic" },
+		{ "type": "vcs", "url": "https://github.com/WordPress/mcp-adapter" }
+	],
+	"require": {
+		"php": ">=8.1",
+		"wordpress/wp-ai-client": "^0.3.0",
+		"wordpress/ai-provider-for-anthropic": "^1.0",
+		"wordpress/mcp-adapter": "^0.4.1"
+	},
+	"suggest": {
+		"wordpress/openai-ai-provider": "AI Provider for OpenAI (GPT). Install as WP plugin or via Composer.",
+		"wordpress/google-ai-provider": "AI Provider for Google (Gemini). Install as WP plugin or via Composer."
+	},
+	"require-dev": {
+		"johnpbloch/wordpress": "6.9",
+		"wp-coding-standards/wpcs": "^3.0",
+		"phpunit/phpunit": "^9.0",
+		"yoast/phpunit-polyfills": "^4.0"
+	},
+	"config": {
+		"allow-plugins": {
+			"dealerdirect/phpcodesniffer-composer-installer": true,
+			"johnpbloch/wordpress-core-installer": true
+		}
+	},
+	"extra": {
+		"wordpress-install-dir": "wp",
+		"installer-paths": {
+			"plugins/{$name}/": [
+				"type:wordpress-plugin"
+			]
+		}
+	},
+	"scripts": {
+		"lint": "phpcs --standard=phpcs.ruleset.xml",
+		"fix": "phpcbf --standard=phpcs.ruleset.xml",
+		"test": "phpunit"
+	}
+}
