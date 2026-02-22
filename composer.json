@@ -3,6 +3,13 @@
 	"description": "Enrich your WordPress blog contents with AI-powered assistant.",
 	"type": "wordpress-plugin",
 	"license": "GPL-3.0-or-later",
+	"repositories": [
+		{ "type": "vcs", "url": "https://github.com/WordPress/wp-ai-client" },
+		{ "type": "vcs", "url": "https://github.com/WordPress/anthropic-ai-provider" },
+		{ "type": "vcs", "url": "https://github.com/WordPress/openai-ai-provider" },
+		{ "type": "vcs", "url": "https://github.com/WordPress/google-ai-provider" },
+		{ "type": "vcs", "url": "https://github.com/WordPress/mcp-adapter" }
+	],
 	"require": {
 		"php": ">=8.1",
 		"wordpress/wp-ai-client": "^0.3.0",
