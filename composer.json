@@ -40,6 +40,7 @@
 	},
 	"scripts": {
 		"lint": "phpcs --standard=phpcs.ruleset.xml",
-		"fix": "phpcbf --standard=phpcs.ruleset.xml"
+		"fix": "phpcbf --standard=phpcs.ruleset.xml",
+		"test": "phpunit"
 	}
 }
