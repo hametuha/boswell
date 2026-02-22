@@ -9,7 +9,6 @@
 		"wordpress/anthropic-ai-provider": "^1.0",
 		"wordpress/openai-ai-provider": "^1.0",
 		"wordpress/google-ai-provider": "^1.0",
-		"wordpress/abilities-api": "^0.4.0",
 		"wordpress/mcp-adapter": "^0.4.1"
 	},
 	"require-dev": {
