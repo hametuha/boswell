@@ -1,0 +1,15 @@
+.claude
+.editorconfig
+.git
+.github
+.gitignore
+.husky
+.mcp.json
+.wp-env.json
+node_modules
+package.json
+package-lock.json
+phpcs.ruleset.xml
+phpunit.xml.dist
+tests
+wp
