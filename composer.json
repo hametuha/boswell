@@ -5,18 +5,18 @@
 	"license": "GPL-3.0-or-later",
 	"repositories": [
 		{ "type": "vcs", "url": "https://github.com/WordPress/wp-ai-client" },
-		{ "type": "vcs", "url": "https://github.com/WordPress/anthropic-ai-provider" },
-		{ "type": "vcs", "url": "https://github.com/WordPress/openai-ai-provider" },
-		{ "type": "vcs", "url": "https://github.com/WordPress/google-ai-provider" },
+		{ "type": "vcs", "url": "https://github.com/WordPress/ai-provider-for-anthropic" },
 		{ "type": "vcs", "url": "https://github.com/WordPress/mcp-adapter" }
 	],
 	"require": {
 		"php": ">=8.1",
 		"wordpress/wp-ai-client": "^0.3.0",
-		"wordpress/anthropic-ai-provider": "^1.0",
-		"wordpress/openai-ai-provider": "^1.0",
-		"wordpress/google-ai-provider": "^1.0",
+		"wordpress/ai-provider-for-anthropic": "^1.0",
 		"wordpress/mcp-adapter": "^0.4.1"
+	},
+	"suggest": {
+		"wordpress/openai-ai-provider": "AI Provider for OpenAI (GPT). Install as WP plugin or via Composer.",
+		"wordpress/google-ai-provider": "AI Provider for Google (Gemini). Install as WP plugin or via Composer."
 	},
 	"require-dev": {
 		"johnpbloch/wordpress": "6.9",
