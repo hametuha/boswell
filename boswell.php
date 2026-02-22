@@ -40,13 +40,20 @@ if ( class_exists( 'WordPress\AI_Client\AI_Client' ) ) {
 			// Set up HTTP discovery first so providers can create their HTTP transporter.
 			WordPress\AI_Client\HTTP\WP_AI_Client_Discovery_Strategy::init();
 
-			// Register providers (must happen before AI_Client::init() calls collect_providers).
-			$registry = WordPress\AiClient\AiClient::defaultRegistry();
-			$registry->registerProvider( WordPress\AnthropicAiProvider\Provider\AnthropicProvider::class );
-			$registry->registerProvider( WordPress\OpenAiAiProvider\Provider\OpenAiProvider::class );
-			$registry->registerProvider( WordPress\GoogleAiProvider\Provider\GoogleProvider::class );
+			// Register available providers.
+			$registry  = WordPress\AiClient\AiClient::defaultRegistry();
+			$providers = array(
+				'WordPress\AnthropicAiProvider\Provider\AnthropicProvider',
+				'WordPress\OpenAiAiProvider\Provider\OpenAiProvider',
+				'WordPress\GoogleAiProvider\Provider\GoogleProvider',
+			);
+			foreach ( $providers as $provider ) {
+				if ( class_exists( $provider ) ) {
+					$registry->registerProvider( $provider );
+				}
+			}
 
-			// Initialize wp-ai-client (collects providers, passes credentials, adds admin screen).
+			// Initialize wp-ai-client.
 			WordPress\AI_Client\AI_Client::init();
 		}
 	);
