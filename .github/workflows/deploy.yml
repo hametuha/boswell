@@ -35,24 +35,21 @@ jobs:
       - name: Install dependencies
         run: composer install --no-dev --prefer-dist --no-progress
 
-      - name: Set version
+      - name: Build
         run: |
           PREFIX="refs/tags/"
           VERSION=${GITHUB_REF#"$PREFIX"}
+          echo "Building v${VERSION}..."
           sed -i "s/Version: .*/Version: ${VERSION}/g" ./boswell.php
-
-      - name: Clean package
-        run: |
-          while IFS= read -r item; do
-            [ -z "$item" ] && continue
-            rm -rf "$item"
-          done < .distignore
+          curl -L https://raw.githubusercontent.com/fumikito/wp-readme/master/wp-readme.php | php
+          sed -i "s/^Stable Tag: .*/Stable Tag: ${VERSION}/g" ./readme.txt
 
       - name: Zip Archive
         run: |
-          mkdir ${{ github.event.repository.name }}
-          rsync -av --exclude=${{ github.event.repository.name }} --exclude=.git ./ ./${{ github.event.repository.name }}/
-          zip -r ./${{ github.event.repository.name }}.zip ./${{ github.event.repository.name }}
+          REPO=${{ github.event.repository.name }}
+          mkdir "${REPO}"
+          rsync -av --exclude="${REPO}" --exclude=.git --exclude-from=.distignore ./ "./${REPO}/"
+          zip -r "./${REPO}.zip" "./${REPO}"
 
       - name: Create Release
         id: create_release
