@@ -45,7 +45,7 @@ jobs:
         run: |
           while IFS= read -r item; do
             [ -z "$item" ] && continue
-            [ -e "$item" ] && rm -rf "$item"
+            rm -rf "$item"
           done < .distignore
 
       - name: Zip Archive
