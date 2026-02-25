@@ -78,10 +78,11 @@ class Boswell_Cron {
 	/**
 	 * Execute one comment cycle: select a post and comment on it.
 	 *
-	 * @param string $persona_id The persona to comment as.
+	 * @param string $persona_id  The persona to comment as.
+	 * @param string $strategy_id Optional strategy ID. If empty, picks randomly by weight.
 	 * @return WP_Comment|WP_Error The posted comment or error.
 	 */
-	public static function run( string $persona_id ) {
+	public static function run( string $persona_id, string $strategy_id = '' ) {
 		if ( empty( $persona_id ) ) {
 			return new WP_Error( 'boswell_no_persona', __( 'No persona specified.', 'boswell' ) );
 		}
@@ -92,7 +93,7 @@ class Boswell_Cron {
 		}
 
 		// Strategy-based selection.
-		$result  = Boswell_Strategy_Selector::select( $persona );
+		$result  = Boswell_Strategy_Selector::select( $persona, $strategy_id );
 		$post_id = $result['post_id'];
 		$context = $result['context'];
 

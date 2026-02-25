@@ -103,20 +103,25 @@ class Boswell_CLI extends WP_CLI_Command {
 	 * [--persona=<persona_id>]
 	 * : Run for a specific persona. If omitted, runs all cron-enabled personas.
 	 *
+	 * [--strategy=<strategy_id>]
+	 * : Use a specific strategy. If omitted, picks randomly by weight.
+	 * Use `wp boswell strategies` to list available strategies.
+	 *
 	 * ## EXAMPLES
 	 *
 	 *     wp boswell run
 	 *     wp boswell run --persona=persona
+	 *     wp boswell run --persona=persona --strategy=book_review
 	 *
 	 * @param array<int, string>    $args       Positional arguments.
 	 * @param array<string, string> $assoc_args Named arguments.
 	 */
 	public function run( array $args, array $assoc_args ): void {
-		$persona_id = $assoc_args['persona'] ?? '';
+		$persona_id  = $assoc_args['persona'] ?? '';
+		$strategy_id = $assoc_args['strategy'] ?? '';
 
 		if ( ! empty( $persona_id ) ) {
-			// Single persona mode.
-			self::run_single( $persona_id );
+			self::run_single( $persona_id, $strategy_id );
 			return;
 		}
 
@@ -129,19 +134,24 @@ class Boswell_CLI extends WP_CLI_Command {
 		}
 
 		foreach ( $enabled as $p ) {
-			self::run_single( $p['id'] );
+			self::run_single( $p['id'], $strategy_id );
 		}
 	}
 
 	/**
 	 * Run auto-comment for a single persona and display the result.
 	 *
-	 * @param string $persona_id Persona ID.
+	 * @param string $persona_id  Persona ID.
+	 * @param string $strategy_id Optional strategy ID.
 	 */
-	private static function run_single( string $persona_id ): void {
-		WP_CLI::log( sprintf( 'Running auto-comment as "%s"...', $persona_id ) );
+	private static function run_single( string $persona_id, string $strategy_id = '' ): void {
+		if ( ! empty( $strategy_id ) ) {
+			WP_CLI::log( sprintf( 'Running auto-comment as "%s" with strategy "%s"...', $persona_id, $strategy_id ) );
+		} else {
+			WP_CLI::log( sprintf( 'Running auto-comment as "%s"...', $persona_id ) );
+		}
 
-		$result = Boswell_Cron::run( $persona_id );
+		$result = Boswell_Cron::run( $persona_id, $strategy_id );
 
 		if ( is_wp_error( $result ) ) {
 			WP_CLI::warning( sprintf( '[%s] %s', $persona_id, $result->get_error_message() ) );

@@ -15,10 +15,11 @@ class Boswell_Strategy_Selector {
 	/**
 	 * Select a post for a persona using the strategy system.
 	 *
-	 * @param array<string, mixed> $persona Persona data.
+	 * @param array<string, mixed> $persona     Persona data.
+	 * @param string               $strategy_id Optional strategy ID. If empty, picks randomly by weight.
 	 * @return array{post_id: int, context: array<string, mixed>}
 	 */
-	public static function select( array $persona ): array {
+	public static function select( array $persona, string $strategy_id = '' ): array {
 		$strategies = self::get_strategies();
 
 		if ( empty( $strategies ) ) {
@@ -28,8 +29,25 @@ class Boswell_Strategy_Selector {
 			);
 		}
 
-		$strategy = self::pick_weighted( $strategies );
-		$args     = self::build_query_args( $strategy );
+		// Pick a specific strategy or random by weight.
+		$strategy = null;
+		if ( ! empty( $strategy_id ) ) {
+			foreach ( $strategies as $s ) {
+				if ( ( $s['id'] ?? '' ) === $strategy_id ) {
+					$strategy = $s;
+					break;
+				}
+			}
+			if ( ! $strategy ) {
+				return array(
+					'post_id' => 0,
+					'context' => array(),
+				);
+			}
+		} else {
+			$strategy = self::pick_weighted( $strategies );
+		}
+		$args = self::build_query_args( $strategy );
 
 		/**
 		 * Filter the WP_Query arguments before execution.
