@@ -20,11 +20,10 @@ class Boswell_Cron {
 	const FREQUENCIES = array( 'hourly', 'twicedaily', 'daily' );
 
 	/**
-	 * Register the cron handler and default post selection filter.
+	 * Register the cron handler.
 	 */
 	public static function init(): void {
 		add_action( self::HOOK_NAME, array( __CLASS__, 'handle' ) );
-		add_filter( 'boswell_select_post', array( __CLASS__, 'select_post' ), 10, 2 );
 	}
 
 	/**
@@ -97,67 +96,11 @@ class Boswell_Cron {
 		$post_id = $result['post_id'];
 		$context = $result['context'];
 
-		// Legacy fallback for existing boswell_select_post filter users.
-		if ( empty( $post_id ) ) {
-			/**
-			 * Select a post to comment on.
-			 *
-			 * @deprecated Use boswell_comment_strategies filter instead.
-			 *
-			 * @param int                  $post_id Default 0 (no post).
-			 * @param array<string, mixed> $persona Persona data.
-			 * @return int Post ID, or 0 if none found.
-			 */
-			$post_id = apply_filters( 'boswell_select_post', 0, $persona );
-			$context = array();
-		}
-
 		if ( empty( $post_id ) ) {
 			return new WP_Error( 'boswell_no_post', __( 'No eligible post found to comment on.', 'boswell' ) );
 		}
 
 		return Boswell_Commenter::comment( $post_id, $persona_id, 0, $context );
-	}
-
-	/**
-	 * Default post selection: random recent post not yet commented by the persona's user.
-	 *
-	 * @deprecated Use Boswell_Strategy_Selector::select() and boswell_comment_strategies filter.
-	 *
-	 * @param int                  $post_id Current post ID (0 if none selected yet).
-	 * @param array<string, mixed> $persona Persona data.
-	 * @return int Post ID.
-	 */
-	public static function select_post( int $post_id, array $persona ): int {
-		// If another filter already selected a post, don't override.
-		if ( $post_id > 0 ) {
-			return $post_id;
-		}
-
-		global $wpdb;
-
-		$user_id = (int) $persona['user_id'];
-
-		// Get recent published post IDs not commented by this user.
-		// Uses post_date_gmt + UTC_TIMESTAMP() for timezone-safe comparison.
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- One-off selection query.
-		$results = $wpdb->get_col(
-			$wpdb->prepare(
-				"SELECT p.ID FROM {$wpdb->posts} p
-				WHERE p.post_type = 'post'
-				AND p.post_status = 'publish'
-				AND p.post_date_gmt >= DATE_SUB( UTC_TIMESTAMP(), INTERVAL 90 DAY )
-				AND p.ID NOT IN (
-					SELECT DISTINCT comment_post_ID FROM {$wpdb->comments}
-					WHERE user_id = %d
-				)
-				ORDER BY RAND()
-				LIMIT 1",
-				$user_id
-			)
-		);
-
-		return ! empty( $results ) ? (int) $results[0] : 0;
 	}
 
 	/**

@@ -98,47 +98,6 @@ class Test_Boswell_Cron extends WP_UnitTestCase {
 		$this->assertFalse( wp_next_scheduled( Boswell_Cron::HOOK_NAME, array( $id2 ) ) );
 	}
 
-	public function test_select_post_returns_uncommented_post(): void {
-		$user_id = self::factory()->user->create();
-		$post_id = self::factory()->post->create( array( 'post_date' => gmdate( 'Y-m-d H:i:s' ) ) );
-		$persona = array( 'user_id' => $user_id );
-
-		$selected = Boswell_Cron::select_post( 0, $persona );
-		$this->assertSame( $post_id, $selected );
-	}
-
-	public function test_select_post_excludes_already_commented(): void {
-		$user_id = self::factory()->user->create();
-		$post_id = self::factory()->post->create( array( 'post_date' => gmdate( 'Y-m-d H:i:s' ) ) );
-
-		self::factory()->comment->create(
-			array(
-				'comment_post_ID' => $post_id,
-				'user_id'         => $user_id,
-			)
-		);
-
-		$persona  = array( 'user_id' => $user_id );
-		$selected = Boswell_Cron::select_post( 0, $persona );
-		$this->assertSame( 0, $selected );
-	}
-
-	public function test_select_post_respects_existing_selection(): void {
-		$persona = array( 'user_id' => 1 );
-		$this->assertSame( 999, Boswell_Cron::select_post( 999, $persona ) );
-	}
-
-	public function test_select_post_ignores_old_posts(): void {
-		$user_id = self::factory()->user->create();
-		self::factory()->post->create(
-			array( 'post_date' => gmdate( 'Y-m-d H:i:s', strtotime( '-120 days' ) ) )
-		);
-
-		$persona  = array( 'user_id' => $user_id );
-		$selected = Boswell_Cron::select_post( 0, $persona );
-		$this->assertSame( 0, $selected );
-	}
-
 	public function test_uninstall_clears_all_schedules(): void {
 		$id = $this->create_persona( array( 'cron_enabled' => true ) );
 		Boswell_Cron::uninstall();
