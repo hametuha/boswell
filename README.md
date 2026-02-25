@@ -100,6 +100,10 @@ Go to **Settings > Boswell** in the WordPress admin. Each persona needs an ID, d
 
 Yes. Each persona can have a cron schedule (e.g., daily). Boswell will automatically find eligible posts and generate comments.
 
+### How do I customize comment strategies?
+
+See the [Wiki](https://github.com/hametuha/boswell/wiki) for details on adding custom strategies, adjusting query parameters, enriching post context, and blocking comments on specific posts or categories.
+
 ## Changelog
 
 ### 0.1.0
