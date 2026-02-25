@@ -1,12 +1,12 @@
 # Boswell
 
-Tags: ai, comments, persona, mcp, content
-Contributors: Takahashi_Fumiki
-Tested Up to: 6.9
-Stable Tag: 0.1.0
-Requires at least: 6.9
-Requires PHP: 8.1
-License: GPLv3 or later
+Tags: ai, comments, persona, mcp, content  
+Contributors: hametuha, Takahashi_Fumiki  
+Tested Up to: 6.9  
+Stable Tag: 0.1.0  
+Requires at least: 6.9  
+Requires PHP: 8.1  
+License: GPLv3 or later  
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
 AI-powered commenting and content management for WordPress.
@@ -49,6 +49,8 @@ Boswell uses [wp-ai-client](https://github.com/WordPress/wp-ai-client) for AI te
 - [AI Provider for Anthropic](https://github.com/WordPress/ai-provider-for-anthropic) (bundled)
 - [AI Provider for OpenAI](https://github.com/WordPress/openai-ai-provider) (optional)
 - [AI Provider for Google](https://github.com/WordPress/google-ai-provider) (optional)
+
+Since WordPress 7.0, these extensions above will not be bundled.
 
 ## Installation
 
@@ -97,6 +99,10 @@ Go to **Settings > Boswell** in the WordPress admin. Each persona needs an ID, d
 ### Can personas comment automatically?
 
 Yes. Each persona can have a cron schedule (e.g., daily). Boswell will automatically find eligible posts and generate comments.
+
+### How do I customize comment strategies?
+
+See the [Wiki](https://github.com/hametuha/boswell/wiki) for details on adding custom strategies, adjusting query parameters, enriching post context, and blocking comments on specific posts or categories.
 
 ## Changelog
 

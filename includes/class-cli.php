@@ -103,20 +103,25 @@ class Boswell_CLI extends WP_CLI_Command {
 	 * [--persona=<persona_id>]
 	 * : Run for a specific persona. If omitted, runs all cron-enabled personas.
 	 *
+	 * [--strategy=<strategy_id>]
+	 * : Use a specific strategy. If omitted, picks randomly by weight.
+	 * Use `wp boswell strategies` to list available strategies.
+	 *
 	 * ## EXAMPLES
 	 *
 	 *     wp boswell run
 	 *     wp boswell run --persona=persona
+	 *     wp boswell run --persona=persona --strategy=book_review
 	 *
 	 * @param array<int, string>    $args       Positional arguments.
 	 * @param array<string, string> $assoc_args Named arguments.
 	 */
 	public function run( array $args, array $assoc_args ): void {
-		$persona_id = $assoc_args['persona'] ?? '';
+		$persona_id  = $assoc_args['persona'] ?? '';
+		$strategy_id = $assoc_args['strategy'] ?? '';
 
 		if ( ! empty( $persona_id ) ) {
-			// Single persona mode.
-			self::run_single( $persona_id );
+			self::run_single( $persona_id, $strategy_id );
 			return;
 		}
 
@@ -129,19 +134,24 @@ class Boswell_CLI extends WP_CLI_Command {
 		}
 
 		foreach ( $enabled as $p ) {
-			self::run_single( $p['id'] );
+			self::run_single( $p['id'], $strategy_id );
 		}
 	}
 
 	/**
 	 * Run auto-comment for a single persona and display the result.
 	 *
-	 * @param string $persona_id Persona ID.
+	 * @param string $persona_id  Persona ID.
+	 * @param string $strategy_id Optional strategy ID.
 	 */
-	private static function run_single( string $persona_id ): void {
-		WP_CLI::log( sprintf( 'Running auto-comment as "%s"...', $persona_id ) );
+	private static function run_single( string $persona_id, string $strategy_id = '' ): void {
+		if ( ! empty( $strategy_id ) ) {
+			WP_CLI::log( sprintf( 'Running auto-comment as "%s" with strategy "%s"...', $persona_id, $strategy_id ) );
+		} else {
+			WP_CLI::log( sprintf( 'Running auto-comment as "%s"...', $persona_id ) );
+		}
 
-		$result = Boswell_Cron::run( $persona_id );
+		$result = Boswell_Cron::run( $persona_id, $strategy_id );
 
 		if ( is_wp_error( $result ) ) {
 			WP_CLI::warning( sprintf( '[%s] %s', $persona_id, $result->get_error_message() ) );
@@ -160,6 +170,47 @@ class Boswell_CLI extends WP_CLI_Command {
 		);
 		WP_CLI::log( '' );
 		WP_CLI::log( $result->comment_content );
+	}
+
+	/**
+	 * List registered comment strategies.
+	 *
+	 * ## OPTIONS
+	 *
+	 * [--format=<format>]
+	 * : Output format. Accepts table, json, csv, yaml. Default: table.
+	 *
+	 * ## EXAMPLES
+	 *
+	 *     wp boswell strategies
+	 *     wp boswell strategies --format=json
+	 *
+	 * @param array<int, string>    $args       Positional arguments.
+	 * @param array<string, string> $assoc_args Named arguments.
+	 */
+	public function strategies( array $args, array $assoc_args ): void {
+		$strategies = Boswell_Strategy_Selector::get_strategies();
+
+		if ( empty( $strategies ) ) {
+			WP_CLI::warning( 'No strategies registered.' );
+			return;
+		}
+
+		$total = array_sum( array_column( $strategies, 'weight' ) );
+		$items = array();
+		foreach ( $strategies as $s ) {
+			$weight  = max( 1, (int) ( $s['weight'] ?? 1 ) );
+			$items[] = array(
+				'id'          => $s['id'] ?? '(none)',
+				'label'       => $s['label'] ?? '',
+				'weight'      => $weight,
+				'probability' => $total > 0 ? round( $weight / $total * 100 ) . '%' : '—',
+				'hint'        => mb_strimwidth( $s['hint'] ?? '', 0, 60, '...' ),
+			);
+		}
+
+		$format = $assoc_args['format'] ?? 'table';
+		WP_CLI\Utils\format_items( $format, $items, array( 'id', 'label', 'weight', 'probability', 'hint' ) );
 	}
 
 	/**
