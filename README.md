@@ -62,10 +62,7 @@ Since WordPress 7.0, these extensions above will not be bundled.
 
 ### MCP Connection
 
-To connect Claude Desktop to your WordPress site:
-
-1. Install and activate the [MCP Adapter](https://github.com/WordPress/mcp-adapter) plugin.
-2. Add the MCP server to your Claude Desktop configuration:
+To connect Claude Desktop to your WordPress site, add the MCP server to your Claude Desktop configuration:
 
 ```json
 {
