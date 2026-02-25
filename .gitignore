@@ -10,6 +10,7 @@ package-lock.json
 
 # Build files
 /wp/
+/wiki/
 
 # AI
 .claude/settings.local.json
