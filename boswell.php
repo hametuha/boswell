@@ -27,6 +27,7 @@ require_once __DIR__ . '/includes/class-memory.php';
 require_once __DIR__ . '/includes/class-persona.php';
 require_once __DIR__ . '/includes/class-persona-admin.php';
 require_once __DIR__ . '/includes/class-commenter.php';
+require_once __DIR__ . '/includes/class-strategy-selector.php';
 require_once __DIR__ . '/includes/class-cron.php';
 require_once __DIR__ . '/includes/class-rest-controller.php';
 require_once __DIR__ . '/includes/class-abilities.php';

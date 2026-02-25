@@ -15,12 +15,13 @@ class Boswell_Commenter {
 	/**
 	 * Generate and post a comment on a given post as a given persona.
 	 *
-	 * @param int    $post_id    The post ID to comment on.
-	 * @param string $persona_id The persona ID to comment as.
-	 * @param int    $parent_id  Optional parent comment ID for replies.
+	 * @param int                  $post_id    The post ID to comment on.
+	 * @param string               $persona_id The persona ID to comment as.
+	 * @param int                  $parent_id  Optional parent comment ID for replies.
+	 * @param array<string, mixed> $context    Optional context from strategy selector.
 	 * @return WP_Comment|WP_Error The comment object on success, WP_Error on failure.
 	 */
-	public static function comment( int $post_id, string $persona_id, int $parent_id = 0 ) {
+	public static function comment( int $post_id, string $persona_id, int $parent_id = 0, array $context = array() ) {
 		if ( ! class_exists( 'WordPress\AI_Client\AI_Client' ) ) {
 			return new WP_Error( 'boswell_ai_client_missing', __( 'wp-ai-client is not available.', 'boswell' ) );
 		}
@@ -43,10 +44,46 @@ class Boswell_Commenter {
 			return new WP_Error( 'boswell_user_not_found', __( 'Persona user not found.', 'boswell' ) );
 		}
 
-		// 4. Build system instruction (persona + memory).
+		// 4. Safety valve — allows blocking comments on specific posts.
+		/**
+		 * Filter whether Boswell should comment on this post.
+		 *
+		 * Applies to ALL paths: cron, MCP, CLI, REST.
+		 *
+		 * @param bool                 $should  Whether to proceed. Default true.
+		 * @param WP_Post              $post    The target post.
+		 * @param array<string, mixed> $persona Persona data.
+		 */
+		$should = apply_filters( 'boswell_should_comment', true, $post, $persona );
+		if ( ! $should ) {
+			return new WP_Error( 'boswell_comment_blocked', __( 'Commenting on this post was blocked by a filter.', 'boswell' ) );
+		}
+
+		// 5. Enrich context for direct calls (MCP, REST, CLI with explicit post_id).
+		if ( empty( $context ) ) {
+			/**
+			 * Filter the post context (direct call path).
+			 *
+			 * @param array<string, mixed> $context  Default context.
+			 * @param WP_Post              $post     The target post.
+			 * @param array<string, mixed> $strategy Empty array for direct calls.
+			 */
+			$context = apply_filters(
+				'boswell_post_context',
+				array(
+					'strategy_id'   => 'direct',
+					'strategy_hint' => '',
+					'notes'         => array(),
+				),
+				$post,
+				array()
+			);
+		}
+
+		// 6. Build system instruction (persona + memory).
 		$system = self::build_system_instruction( $persona );
 
-		// 5. Resolve parent comment for replies.
+		// 7. Resolve parent comment for replies.
 		$parent = null;
 		if ( $parent_id > 0 ) {
 			$parent = get_comment( $parent_id );
@@ -55,10 +92,10 @@ class Boswell_Commenter {
 			}
 		}
 
-		// 6. Build user prompt (post content + existing comments).
-		$prompt = self::build_prompt( $post, $parent );
+		// 8. Build user prompt (post content + existing comments + context).
+		$prompt = self::build_prompt( $post, $parent, $context );
 
-		// 7. Generate comment text via AI.
+		// 9. Generate comment text via AI.
 		try {
 			$comment_text = WordPress\AI_Client\AI_Client::prompt( $prompt )
 				->using_provider( $persona['provider'] )
@@ -74,7 +111,7 @@ class Boswell_Commenter {
 			return new WP_Error( 'boswell_empty_comment', __( 'AI returned an empty comment.', 'boswell' ) );
 		}
 
-		// 8. Insert comment as the persona's linked user.
+		// 10. Insert comment as the persona's linked user.
 		$comment_data = array(
 			'comment_post_ID'      => $post->ID,
 			'comment_content'      => $comment_text,
@@ -93,7 +130,7 @@ class Boswell_Commenter {
 			return new WP_Error( 'boswell_insert_failed', __( 'Failed to insert comment.', 'boswell' ) );
 		}
 
-		// 9. Update memory.
+		// 11. Update memory.
 		$title = $post->post_title;
 		if ( $parent ) {
 			Boswell_Memory::append_entry(
@@ -155,20 +192,60 @@ class Boswell_Commenter {
 	}
 
 	/**
-	 * Build the user prompt from post content and existing comments.
+	 * Build the user prompt from post content, existing comments, and context.
 	 *
-	 * @param WP_Post         $post   The post object.
-	 * @param WP_Comment|null $parent Parent comment when replying, or null.
+	 * @param WP_Post              $post    The post object.
+	 * @param WP_Comment|null      $parent  Parent comment when replying, or null.
+	 * @param array<string, mixed> $context Context from strategy selector.
 	 * @return string
 	 */
-	private static function build_prompt( WP_Post $post, ?WP_Comment $parent = null ): string {
+	private static function build_prompt( WP_Post $post, ?WP_Comment $parent = null, array $context = array() ): string {
 		$content = wp_strip_all_tags( $post->post_content );
 		// Truncate very long posts to stay within reasonable token limits.
 		$content = mb_strimwidth( $content, 0, 5000, '...' );
 
-		$parts = array(
-			sprintf( "# %s\n\n%s", $post->post_title, $content ),
+		// Date information.
+		$post_date = get_the_date( 'Y-m-d', $post );
+		$elapsed   = human_time_diff( get_post_timestamp( $post ), time() );
+
+		// Categories.
+		$categories = get_the_category( $post->ID );
+		$cat_names  = ! empty( $categories )
+			? implode( ', ', wp_list_pluck( $categories, 'name' ) )
+			: '';
+
+		$parts = array();
+
+		// Title + date.
+		$parts[] = sprintf(
+			"# %s\nPublished: %s (%s)",
+			$post->post_title,
+			$post_date,
+			/* translators: %s: human-readable elapsed time */
+			sprintf( __( 'about %s ago', 'boswell' ), $elapsed )
 		);
+
+		// Categories.
+		if ( ! empty( $cat_names ) ) {
+			$parts[] = sprintf( 'Categories: %s', $cat_names );
+		}
+
+		// "Why this post" section from context.
+		$why_parts = array();
+		if ( ! empty( $context['strategy_hint'] ) ) {
+			$why_parts[] = $context['strategy_hint'];
+		}
+		if ( ! empty( $context['notes'] ) ) {
+			foreach ( $context['notes'] as $note ) {
+				$why_parts[] = '- ' . $note;
+			}
+		}
+		if ( ! empty( $why_parts ) ) {
+			$parts[] = "## Why This Post\n\n" . implode( "\n", $why_parts );
+		}
+
+		// Content.
+		$parts[] = sprintf( "## Content\n\n%s", $content );
 
 		// Include existing comments for context.
 		$comments = get_comments(

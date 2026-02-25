@@ -92,24 +92,37 @@ class Boswell_Cron {
 			return new WP_Error( 'boswell_persona_not_found', __( 'Persona not found.', 'boswell' ) );
 		}
 
-		/**
-		 * Select a post to comment on.
-		 *
-		 * @param int                  $post_id Default 0 (no post).
-		 * @param array<string, mixed> $persona Persona data.
-		 * @return int Post ID, or 0 if none found.
-		 */
-		$post_id = apply_filters( 'boswell_select_post', 0, $persona );
+		// Strategy-based selection.
+		$result  = Boswell_Strategy_Selector::select( $persona );
+		$post_id = $result['post_id'];
+		$context = $result['context'];
+
+		// Legacy fallback for existing boswell_select_post filter users.
+		if ( empty( $post_id ) ) {
+			/**
+			 * Select a post to comment on.
+			 *
+			 * @deprecated Use boswell_comment_strategies filter instead.
+			 *
+			 * @param int                  $post_id Default 0 (no post).
+			 * @param array<string, mixed> $persona Persona data.
+			 * @return int Post ID, or 0 if none found.
+			 */
+			$post_id = apply_filters( 'boswell_select_post', 0, $persona );
+			$context = array();
+		}
 
 		if ( empty( $post_id ) ) {
 			return new WP_Error( 'boswell_no_post', __( 'No eligible post found to comment on.', 'boswell' ) );
 		}
 
-		return Boswell_Commenter::comment( $post_id, $persona_id );
+		return Boswell_Commenter::comment( $post_id, $persona_id, 0, $context );
 	}
 
 	/**
 	 * Default post selection: random recent post not yet commented by the persona's user.
+	 *
+	 * @deprecated Use Boswell_Strategy_Selector::select() and boswell_comment_strategies filter.
 	 *
 	 * @param int                  $post_id Current post ID (0 if none selected yet).
 	 * @param array<string, mixed> $persona Persona data.
