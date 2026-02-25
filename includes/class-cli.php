@@ -163,6 +163,47 @@ class Boswell_CLI extends WP_CLI_Command {
 	}
 
 	/**
+	 * List registered comment strategies.
+	 *
+	 * ## OPTIONS
+	 *
+	 * [--format=<format>]
+	 * : Output format. Accepts table, json, csv, yaml. Default: table.
+	 *
+	 * ## EXAMPLES
+	 *
+	 *     wp boswell strategies
+	 *     wp boswell strategies --format=json
+	 *
+	 * @param array<int, string>    $args       Positional arguments.
+	 * @param array<string, string> $assoc_args Named arguments.
+	 */
+	public function strategies( array $args, array $assoc_args ): void {
+		$strategies = Boswell_Strategy_Selector::get_strategies();
+
+		if ( empty( $strategies ) ) {
+			WP_CLI::warning( 'No strategies registered.' );
+			return;
+		}
+
+		$total = array_sum( array_column( $strategies, 'weight' ) );
+		$items = array();
+		foreach ( $strategies as $s ) {
+			$weight  = max( 1, (int) ( $s['weight'] ?? 1 ) );
+			$items[] = array(
+				'id'          => $s['id'] ?? '(none)',
+				'label'       => $s['label'] ?? '',
+				'weight'      => $weight,
+				'probability' => $total > 0 ? round( $weight / $total * 100 ) . '%' : '—',
+				'hint'        => mb_strimwidth( $s['hint'] ?? '', 0, 60, '...' ),
+			);
+		}
+
+		$format = $assoc_args['format'] ?? 'table';
+		WP_CLI\Utils\format_items( $format, $items, array( 'id', 'label', 'weight', 'probability', 'hint' ) );
+	}
+
+	/**
 	 * Show Boswell's memory, narrated by a persona.
 	 *
 	 * ## OPTIONS
