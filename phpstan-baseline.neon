@@ -1,0 +1,25 @@
+parameters:
+	ignoreErrors:
+		-
+			message: '#^Parameter \#2 \$callback of function register_deactivation_hook expects callable\(bool\)\: void, array\{''Boswell_Cron'', ''unschedule''\} given\.$#'
+			identifier: argument.type
+			count: 1
+			path: boswell.php
+
+		-
+			message: '#^Parameter \#1 \$post of function get_post expects int\|WP_Post\|null, string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: includes/class-cli.php
+
+		-
+			message: '#^Variable \$report might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: includes/class-cli.php
+
+		-
+			message: '#^Parameter \#1 \$commentdata of function wp_insert_comment expects array\{comment_agent\?\: string, comment_approved\?\: int\|string, comment_author\?\: string, comment_author_email\?\: string, comment_author_IP\?\: string, comment_author_url\?\: string, comment_content\?\: string, comment_date\?\: string, \.\.\.\}, array\{comment_post_ID\: int, comment_content\: non\-falsy\-string, comment_author\: string, comment_author_email\: string, comment_author_url\: string, user_id\: int, comment_approved\: 1, comment_parent\?\: string\} given\.$#'
+			identifier: argument.type
+			count: 1
+			path: includes/class-commenter.php
