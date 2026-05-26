@@ -3,7 +3,7 @@
 Tags: ai, comments, persona, mcp, content  
 Contributors: hametuha, Takahashi_Fumiki  
 Tested Up to: 7.0  
-Stable Tag: 2.0.0  
+Stable Tag: nightly  
 Requires at least: 7.0  
 Requires PHP: 8.1  
 License: GPLv3 or later  
