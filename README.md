@@ -3,7 +3,7 @@
 Tags: ai, comments, persona, mcp, content  
 Contributors: hametuha, Takahashi_Fumiki  
 Tested Up to: 7.0  
-Stable Tag: 0.1.0  
+Stable Tag: 2.0.0  
 Requires at least: 7.0  
 Requires PHP: 8.1  
 License: GPLv3 or later  
@@ -109,11 +109,46 @@ Yes. Each persona can have a cron schedule (e.g., daily). Boswell will automatic
 
 See the [Wiki](https://github.com/hametuha/boswell/wiki) for details on adding custom strategies, adjusting query parameters, enriching post context, and blocking comments on specific posts or categories.
 
+## Upgrade Notice
+
+### 2.0.0
+
+Requires WordPress 7.0. Before upgrading from 1.x, **delete the existing `wp-content/plugins/boswell/` directory** so the bundled `vendor/` packages don't shadow the standalone AI Provider and MCP Adapter plugins. Install AI Provider for Anthropic and MCP Adapter separately.
+
 ## Changelog
 
-### 0.1.0
+### 2.0.0
 
-- Initial release.
+- **Breaking:** Requires WordPress 7.0 and PHP 8.1.
+- Use the core AI Client (`wp_ai_client_prompt()`) introduced in WordPress 7.0 instead of the bundled `wp-ai-client` SDK.
+- No longer bundles `wp-ai-client`, `ai-provider-for-anthropic`, or `mcp-adapter` — install them as standalone plugins.
+- Update MCP ability metadata for MCP Adapter v0.5.0 (`uri` and `annotations` moved under the `mcp` key).
+- Release zip no longer ships `vendor/`, `composer.json`, or `composer.lock`.
+
+### 1.1.0
+
+- Add strategy-based post selection and comment safety valve.
+
+### 1.0.4
+
+- Fix deploy workflow: upload zip to existing release.
+
+### 1.0.3
+
+- Fix deploy clean step failing on non-existent files.
+
+### 1.0.2
+
+- Add version resolver to release-drafter.
+- Add README.md for WordPress readme.txt.
+
+### 1.0.1
+
+- Add deploy workflow with zip release on tag push.
+
+### 1.0.0
+
+- Initial release. AI persona management, shared memory, automated commenting via WordPress cron, MCP integration via the WordPress Abilities API, post CRUD tools, and WP-CLI commands.
 - AI persona management with admin UI.
 - Shared memory system with section-based Markdown storage.
 - Automated commenting via WordPress cron.
