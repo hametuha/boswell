@@ -233,10 +233,10 @@ class Boswell_REST_Controller extends WP_REST_Controller {
 	 * @return WP_REST_Response|WP_Error
 	 */
 	public function ping( WP_REST_Request $request ) {
-		if ( ! class_exists( 'WordPress\AI_Client\AI_Client' ) ) {
+		if ( ! function_exists( 'wp_ai_client_prompt' ) ) {
 			return new WP_Error(
 				'boswell_ai_client_missing',
-				__( 'wp-ai-client is not available.', 'boswell' ),
+				__( 'WordPress AI Client (WP 7.0+) is not available.', 'boswell' ),
 				array( 'status' => 500 )
 			);
 		}
@@ -251,16 +251,15 @@ class Boswell_REST_Controller extends WP_REST_Controller {
 			);
 		}
 
-		try {
-			$text = WordPress\AI_Client\AI_Client::prompt( 'Introduce yourself in one sentence.' )
-				->using_provider( $persona['provider'] )
-				->using_system_instruction( $persona['persona'] )
-				->using_max_tokens( 200 )
-				->generate_text();
-		} catch ( \Exception $e ) {
+		$text = wp_ai_client_prompt( 'Introduce yourself in one sentence.' )
+			->using_provider( $persona['provider'] )
+			->using_system_instruction( $persona['persona'] )
+			->using_max_tokens( 200 )
+			->generate_text();
+		if ( is_wp_error( $text ) ) {
 			return new WP_Error(
 				'boswell_ping_failed',
-				$e->getMessage(),
+				$text->get_error_message(),
 				array( 'status' => 502 )
 			);
 		}

@@ -3,8 +3,8 @@
  * Plugin Name: Boswell
  * Plugin URI:  https://github.com/hametuha/boswell
  * Description: Enrich your WordPress blog contents with AI-powered assistant.
- * Version:     0.1.0
- * Requires at least: 6.9
+ * Version:     nightly
+ * Requires at least: 7.0
  * Requires PHP: 8.1
  * Author:      Fumiki Takahashi
  * Author URI:  https://takahashifumiki.com
@@ -17,11 +17,6 @@
 
 defined( 'ABSPATH' ) || exit;
 
-// Composer autoloader (wp-ai-client, providers, etc.).
-if ( file_exists( __DIR__ . '/vendor/autoload.php' ) ) {
-	require_once __DIR__ . '/vendor/autoload.php';
-}
-
 // Load classes.
 require_once __DIR__ . '/includes/class-memory.php';
 require_once __DIR__ . '/includes/class-persona.php';
@@ -32,33 +27,6 @@ require_once __DIR__ . '/includes/class-cron.php';
 require_once __DIR__ . '/includes/class-rest-controller.php';
 require_once __DIR__ . '/includes/class-abilities.php';
 require_once __DIR__ . '/includes/class-cli.php';
-
-// Register AI providers and initialize wp-ai-client (will be unnecessary after WordPress 7.0).
-if ( class_exists( 'WordPress\AI_Client\AI_Client' ) ) {
-	add_action(
-		'init',
-		function () {
-			// Set up HTTP discovery first so providers can create their HTTP transporter.
-			WordPress\AI_Client\HTTP\WP_AI_Client_Discovery_Strategy::init();
-
-			// Register available providers.
-			$registry  = WordPress\AiClient\AiClient::defaultRegistry();
-			$providers = array(
-				'WordPress\AnthropicAiProvider\Provider\AnthropicProvider',
-				'WordPress\OpenAiAiProvider\Provider\OpenAiProvider',
-				'WordPress\GoogleAiProvider\Provider\GoogleProvider',
-			);
-			foreach ( $providers as $provider ) {
-				if ( class_exists( $provider ) ) {
-					$registry->registerProvider( $provider );
-				}
-			}
-
-			// Initialize wp-ai-client.
-			WordPress\AI_Client\AI_Client::init();
-		}
-	);
-}
 
 // MCP adapter (exposes Boswell abilities as MCP tools/resources/prompts).
 if ( class_exists( 'WP\MCP\Plugin' ) ) {
