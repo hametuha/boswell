@@ -61,9 +61,9 @@ Each provider plugin registers itself with the core AI Client registry on activa
 5. Go to **Settings > Boswell** to configure personas.
 6. Set up your AI provider API key (e.g., `ANTHROPIC_API_KEY` constant or environment variable).
 
-### Upgrading from 0.1.0
+### Upgrading from 1.x
 
-Boswell 0.1.0 bundled the AI Client, AI Provider for Anthropic, and MCP Adapter inside `vendor/`. From the next release these are no longer bundled — they must be installed separately (the AI Client is now part of WordPress 7.0 core). **Before upgrading on a site that has 0.1.0 installed, delete the existing `wp-content/plugins/boswell/` directory** to ensure the old `vendor/` packages don't shadow the new core/plugin equivalents and produce class-redeclaration fatals.
+Boswell 1.x bundled the AI Client, AI Provider for Anthropic, and MCP Adapter inside `vendor/`. From 2.0.0 these are no longer bundled — they must be installed as standalone plugins (the AI Client is now part of WordPress 7.0 core). **Before upgrading a site that has 1.x installed, delete the existing `wp-content/plugins/boswell/` directory** so the old `vendor/` packages don't shadow the new core/plugin equivalents and trigger class-redeclaration fatals.
 
 ### MCP Connection
 
