@@ -2,9 +2,9 @@
 
 Tags: ai, comments, persona, mcp, content  
 Contributors: hametuha, Takahashi_Fumiki  
-Tested Up to: 6.9  
+Tested Up to: 7.0  
 Stable Tag: 0.1.0  
-Requires at least: 6.9  
+Requires at least: 7.0  
 Requires PHP: 8.1  
 License: GPLv3 or later  
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
@@ -26,7 +26,7 @@ Boswell enriches your WordPress blog with AI-powered personas that can comment o
 
 ### How It Works
 
-Boswell registers its capabilities through the [WordPress Abilities API](https://make.wordpress.org/core/tag/abilities-api/) (available in WordPress 6.9+). The [MCP Adapter](https://github.com/WordPress/mcp-adapter) plugin exposes these abilities as MCP tools, resources, and prompts.
+Boswell registers its capabilities through the [WordPress Abilities API](https://make.wordpress.org/core/tag/abilities-api/) (in core since WordPress 6.9). The [MCP Adapter](https://github.com/WordPress/mcp-adapter) plugin exposes these abilities as MCP tools, resources, and prompts.
 
 ```
 Claude Desktop ←MCP→ WordPress (MCP Adapter)
@@ -44,13 +44,13 @@ Claude Desktop ←MCP→ WordPress (MCP Adapter)
 
 ### AI Providers
 
-Boswell uses [wp-ai-client](https://github.com/WordPress/wp-ai-client) for AI text generation. You need at least one AI provider plugin installed:
+Boswell uses the WordPress AI Client (`wp_ai_client_prompt()`), which has been part of core since WordPress 7.0. You need at least one AI provider plugin installed:
 
-- [AI Provider for Anthropic](https://github.com/WordPress/ai-provider-for-anthropic) (bundled)
-- [AI Provider for OpenAI](https://github.com/WordPress/openai-ai-provider) (optional)
-- [AI Provider for Google](https://github.com/WordPress/google-ai-provider) (optional)
+- [AI Provider for Anthropic](https://github.com/WordPress/ai-provider-for-anthropic)
+- [AI Provider for OpenAI](https://github.com/WordPress/openai-ai-provider)
+- [AI Provider for Google](https://github.com/WordPress/google-ai-provider)
 
-Since WordPress 7.0, these extensions above will not be bundled.
+Each provider plugin registers itself with the core AI Client registry on activation — no extra configuration in Boswell is required.
 
 ## Installation
 
@@ -86,11 +86,11 @@ To connect Claude Desktop to your WordPress site:
 
 ### What WordPress version is required?
 
-WordPress 6.9 or later is required for the Abilities API.
+WordPress 7.0 or later. Boswell relies on the AI Client that shipped with WordPress 7.0 core. (The Abilities API has been part of core since 6.9.)
 
 ### Can I use multiple AI providers?
 
-Yes. Install additional AI provider plugins (OpenAI, Google) alongside the bundled Anthropic provider. WordPress will use whichever is configured.
+Yes. Install the AI provider plugins you want (Anthropic, OpenAI, Google) — each one self-registers with the core AI Client. Configure each persona to point at the provider you want to use.
 
 ### How do I create a persona?
 

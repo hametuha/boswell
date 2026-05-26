@@ -22,8 +22,8 @@ class Boswell_Commenter {
 	 * @return WP_Comment|WP_Error The comment object on success, WP_Error on failure.
 	 */
 	public static function comment( int $post_id, string $persona_id, int $parent_id = 0, array $context = array() ) {
-		if ( ! class_exists( 'WordPress\AI_Client\AI_Client' ) ) {
-			return new WP_Error( 'boswell_ai_client_missing', __( 'wp-ai-client is not available.', 'boswell' ) );
+		if ( ! function_exists( 'wp_ai_client_prompt' ) ) {
+			return new WP_Error( 'boswell_ai_client_missing', __( 'WordPress AI Client (WP 7.0+) is not available.', 'boswell' ) );
 		}
 
 		// 1. Resolve persona.
@@ -96,14 +96,13 @@ class Boswell_Commenter {
 		$prompt = self::build_prompt( $post, $parent, $context );
 
 		// 9. Generate comment text via AI.
-		try {
-			$comment_text = WordPress\AI_Client\AI_Client::prompt( $prompt )
-				->using_provider( $persona['provider'] )
-				->using_system_instruction( $system )
-				->using_max_tokens( 1500 )
-				->generate_text();
-		} catch ( \Exception $e ) {
-			return new WP_Error( 'boswell_generation_failed', $e->getMessage() );
+		$comment_text = wp_ai_client_prompt( $prompt )
+			->using_provider( $persona['provider'] )
+			->using_system_instruction( $system )
+			->using_max_tokens( 1500 )
+			->generate_text();
+		if ( is_wp_error( $comment_text ) ) {
+			return new WP_Error( 'boswell_generation_failed', $comment_text->get_error_message() );
 		}
 
 		$comment_text = trim( $comment_text );
