@@ -6,10 +6,13 @@
 .husky
 .mcp.json
 .wp-env.json
+composer.json
+composer.lock
 node_modules
 package.json
 package-lock.json
 phpcs.ruleset.xml
 phpunit.xml.dist
 tests
+vendor
 wp

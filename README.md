@@ -57,8 +57,13 @@ Each provider plugin registers itself with the core AI Client registry on activa
 1. Download the latest release zip from [GitHub Releases](https://github.com/hametuha/boswell/releases).
 2. Upload the zip file via **Plugins > Add New > Upload Plugin** in WordPress admin.
 3. Activate the plugin.
-4. Go to **Settings > Boswell** to configure personas.
-5. Set up your AI provider API key (e.g., `ANTHROPIC_API_KEY` constant or environment variable).
+4. Install at least one AI provider plugin (e.g. [AI Provider for Anthropic](https://wordpress.org/plugins/ai-provider-for-anthropic/)) and the [MCP Adapter](https://github.com/WordPress/mcp-adapter) plugin.
+5. Go to **Settings > Boswell** to configure personas.
+6. Set up your AI provider API key (e.g., `ANTHROPIC_API_KEY` constant or environment variable).
+
+### Upgrading from 0.1.0
+
+Boswell 0.1.0 bundled the AI Client, AI Provider for Anthropic, and MCP Adapter inside `vendor/`. From the next release these are no longer bundled — they must be installed separately (the AI Client is now part of WordPress 7.0 core). **Before upgrading on a site that has 0.1.0 installed, delete the existing `wp-content/plugins/boswell/` directory** to ensure the old `vendor/` packages don't shadow the new core/plugin equivalents and produce class-redeclaration fatals.
 
 ### MCP Connection
 
