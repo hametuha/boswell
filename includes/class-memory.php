@@ -96,6 +96,15 @@ class Boswell_Memory {
 			return false;
 		}
 
+		// Collapse any whitespace (including newlines) into single spaces so the entry
+		// stays on a single Markdown list item. Without this, a multi-paragraph entry
+		// would break the list and subsequent lines would be silently dropped by
+		// extract_entries() on the next append.
+		$entry = trim( preg_replace( '/\s+/u', ' ', $entry ) );
+		if ( '' === $entry ) {
+			return false;
+		}
+
 		$memory  = self::get();
 		$heading = self::SECTIONS[ $section ];
 		$parsed  = self::parse_sections( $memory );
