@@ -258,8 +258,8 @@ class Boswell_CLI extends WP_CLI_Command {
 			WP_CLI::error( $persona->get_error_message() );
 		}
 
-		if ( ! class_exists( 'WordPress\AI_Client\AI_Client' ) ) {
-			WP_CLI::error( 'wp-ai-client is not available.' );
+		if ( ! function_exists( 'wp_ai_client_prompt' ) ) {
+			WP_CLI::error( 'WordPress AI Client (WP 7.0+) is not available.' );
 		}
 
 		$memory = Boswell_Memory::get();
@@ -268,14 +268,13 @@ class Boswell_CLI extends WP_CLI_Command {
 			. "\n\n---\n\nBriefly report what you have been up to recently, in your own voice. "
 			. 'Be conversational and concise (a few sentences).';
 
-		try {
-			$report = WordPress\AI_Client\AI_Client::prompt( $prompt )
-				->using_provider( $persona['provider'] )
-				->using_system_instruction( $system )
-				->using_max_tokens( 500 )
-				->generate_text();
-		} catch ( \Exception $e ) {
-			WP_CLI::error( $e->getMessage() );
+		$report = wp_ai_client_prompt( $prompt )
+			->using_provider( $persona['provider'] )
+			->using_system_instruction( $system )
+			->using_max_tokens( 500 )
+			->generate_text();
+		if ( is_wp_error( $report ) ) {
+			WP_CLI::error( $report->get_error_message() );
 		}
 
 		WP_CLI::log( trim( $report ) );
