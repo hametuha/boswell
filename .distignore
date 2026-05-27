@@ -5,6 +5,7 @@
 .gitignore
 .husky
 .mcp.json
+.node-version
 .wp-env.json
 composer.json
 composer.lock
@@ -12,6 +13,9 @@ node_modules
 package.json
 package-lock.json
 phpcs.ruleset.xml
+phpstan-baseline.neon
+phpstan-bootstrap.php
+phpstan.neon
 phpunit.xml.dist
 tests
 vendor
