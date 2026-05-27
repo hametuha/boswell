@@ -13,6 +13,19 @@
 class Boswell_Commenter {
 
 	/**
+	 * Separator the AI uses to delimit the comment body from the memory summary line.
+	 *
+	 * HTML comments are chosen so the marker remains invisible if it ever leaks through
+	 * to the rendered output, and so the AI treats it as structural rather than narrative.
+	 */
+	const MEMORY_SEPARATOR = '<!--BOSWELL_MEMORY-->';
+
+	/**
+	 * Maximum number of characters allowed in a memory summary line.
+	 */
+	const MEMORY_SUMMARY_MAX_CHARS = 80;
+
+	/**
 	 * Generate and post a comment on a given post as a given persona.
 	 *
 	 * @param int                  $post_id    The post ID to comment on.
@@ -22,8 +35,8 @@ class Boswell_Commenter {
 	 * @return WP_Comment|WP_Error The comment object on success, WP_Error on failure.
 	 */
 	public static function comment( int $post_id, string $persona_id, int $parent_id = 0, array $context = array() ) {
-		if ( ! class_exists( 'WordPress\AI_Client\AI_Client' ) ) {
-			return new WP_Error( 'boswell_ai_client_missing', __( 'wp-ai-client is not available.', 'boswell' ) );
+		if ( ! function_exists( 'wp_ai_client_prompt' ) ) {
+			return new WP_Error( 'boswell_ai_client_missing', __( 'WordPress AI Client (WP 7.0+) is not available.', 'boswell' ) );
 		}
 
 		// 1. Resolve persona.
@@ -96,17 +109,17 @@ class Boswell_Commenter {
 		$prompt = self::build_prompt( $post, $parent, $context );
 
 		// 9. Generate comment text via AI.
-		try {
-			$comment_text = WordPress\AI_Client\AI_Client::prompt( $prompt )
-				->using_provider( $persona['provider'] )
-				->using_system_instruction( $system )
-				->using_max_tokens( 1500 )
-				->generate_text();
-		} catch ( \Exception $e ) {
-			return new WP_Error( 'boswell_generation_failed', $e->getMessage() );
+		$generated = wp_ai_client_prompt( $prompt )
+			->using_provider( $persona['provider'] )
+			->using_system_instruction( $system )
+			->using_max_tokens( 1500 )
+			->generate_text();
+		if ( is_wp_error( $generated ) ) {
+			return new WP_Error( 'boswell_generation_failed', $generated->get_error_message() );
 		}
 
-		$comment_text = trim( $comment_text );
+		[ $comment_text, $memory_summary ] = self::parse_generated_output( $generated );
+
 		if ( empty( $comment_text ) ) {
 			return new WP_Error( 'boswell_empty_comment', __( 'AI returned an empty comment.', 'boswell' ) );
 		}
@@ -131,6 +144,12 @@ class Boswell_Commenter {
 		}
 
 		// 11. Update memory.
+		// Prefer the AI-generated single-line summary; fall back to the legacy
+		// truncation when the AI omitted the separator or returned an empty summary.
+		$summary = '' !== $memory_summary
+			? $memory_summary
+			: self::fallback_summary( $comment_text );
+
 		$title = $post->post_title;
 		if ( $parent ) {
 			Boswell_Memory::append_entry(
@@ -144,7 +163,7 @@ class Boswell_Commenter {
 					$post->ID,
 					$title,
 					$parent->comment_author,
-					mb_strimwidth( $comment_text, 0, 100, '...' )
+					$summary
 				)
 			);
 		} else {
@@ -158,7 +177,7 @@ class Boswell_Commenter {
 					'Post #%d "%s": %s',
 					$post->ID,
 					$title,
-					mb_strimwidth( $comment_text, 0, 100, '...' )
+					$summary
 				)
 			);
 		}
@@ -186,9 +205,66 @@ class Boswell_Commenter {
 			. "- Reference your memory if relevant, but don't force it.\n"
 			. "- Keep the comment concise (1-3 paragraphs).\n"
 			. "- If you are replying to someone, address their points directly.\n"
-			. '- Do NOT include any metadata, headers, or labels — just the comment text.';
+			. '- Do NOT include any metadata, headers, or labels in the comment body.';
+
+		$parts[] = "---\n\n## Output Format\n\n"
+			. "After the comment, output the literal separator on its own line, then a one-line\n"
+			. "summary that will be appended to your memory log. Use this exact structure:\n\n"
+			. "    <comment body, in the persona's voice>\n"
+			. '    ' . self::MEMORY_SEPARATOR . "\n"
+			. "    <memory line>\n\n"
+			. "Rules for the memory line:\n"
+			. sprintf( "- One line, no line breaks, at most %d characters.\n", self::MEMORY_SUMMARY_MAX_CHARS )
+			. "- Neutral ledger tone (NOT in the persona's voice — think \"journal entry\").\n"
+			. "- Capture the post's topic and your stance toward it.\n"
+			. "- Exclude greetings, opening phrases, and other formulaic words.\n"
+			. '- Write in the same language as the comment body.';
 
 		return implode( "\n\n", $parts );
+	}
+
+	/**
+	 * Split AI-generated output into the comment body and the memory summary line.
+	 *
+	 * If the separator is missing or the summary is blank, the second element is
+	 * returned as an empty string so the caller can fall back to legacy truncation.
+	 *
+	 * @param string $generated Raw text returned by the AI.
+	 * @return array{0: string, 1: string} [ comment_body, memory_summary ]
+	 */
+	private static function parse_generated_output( string $generated ): array {
+		$pos = strpos( $generated, self::MEMORY_SEPARATOR );
+		if ( false === $pos ) {
+			return array( trim( $generated ), '' );
+		}
+
+		$body    = trim( substr( $generated, 0, $pos ) );
+		$summary = trim( substr( $generated, $pos + strlen( self::MEMORY_SEPARATOR ) ) );
+
+		// Collapse any whitespace (including newlines) into single spaces so the
+		// summary always stays on a single Markdown list line.
+		$summary = trim( preg_replace( '/\s+/u', ' ', $summary ) );
+
+		if ( mb_strlen( $summary ) > self::MEMORY_SUMMARY_MAX_CHARS ) {
+			$summary = mb_substr( $summary, 0, self::MEMORY_SUMMARY_MAX_CHARS - 1 ) . '…';
+		}
+
+		return array( $body, $summary );
+	}
+
+	/**
+	 * Build a fallback memory summary from the raw comment body.
+	 *
+	 * Used when the AI omitted the separator or returned an empty summary. Collapses
+	 * whitespace before truncating so multi-paragraph comments do not break the
+	 * Markdown list in commentary_log.
+	 *
+	 * @param string $comment_text The comment body the AI produced.
+	 * @return string
+	 */
+	private static function fallback_summary( string $comment_text ): string {
+		$flat = trim( preg_replace( '/\s+/u', ' ', $comment_text ) );
+		return mb_strimwidth( $flat, 0, 100, '...' );
 	}
 
 	/**

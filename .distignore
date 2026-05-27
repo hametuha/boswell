@@ -6,6 +6,8 @@
 .husky
 .mcp.json
 .wp-env.json
+composer.json
+composer.lock
 node_modules
 package.json
 package-lock.json
@@ -15,4 +17,5 @@ phpstan-baseline.neon
 phpstan-bootstrap.php
 phpunit.xml.dist
 tests
+vendor
 wp

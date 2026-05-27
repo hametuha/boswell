@@ -176,14 +176,14 @@ class Boswell_Abilities {
 					return current_user_can( 'edit_posts' );
 				},
 				'meta'                => array(
-					'uri'         => 'boswell://context',
-					'annotations' => array(
-						'audience' => array( 'user', 'assistant' ),
-						'priority' => 0.9,
-					),
-					'mcp'         => array(
-						'public' => true,
-						'type'   => 'resource',
+					'mcp' => array(
+						'public'      => true,
+						'type'        => 'resource',
+						'uri'         => 'boswell://context',
+						'annotations' => array(
+							'audience' => array( 'user', 'assistant' ),
+							'priority' => 0.9,
+						),
 					),
 				),
 			)
@@ -381,25 +381,25 @@ class Boswell_Abilities {
 					return current_user_can( 'edit_posts' );
 				},
 				'meta'                => array(
-					'arguments'   => array(
-						array(
-							'name'        => 'persona',
-							'description' => __( 'Persona ID (uses first persona if omitted).', 'boswell' ),
-							'required'    => false,
+					'mcp' => array(
+						'public'      => true,
+						'type'        => 'prompt',
+						'arguments'   => array(
+							array(
+								'name'        => 'persona',
+								'description' => __( 'Persona ID (uses first persona if omitted).', 'boswell' ),
+								'required'    => false,
+							),
+							array(
+								'name'        => 'topic',
+								'description' => __( 'Topic or theme for the post.', 'boswell' ),
+								'required'    => false,
+							),
 						),
-						array(
-							'name'        => 'topic',
-							'description' => __( 'Topic or theme for the post.', 'boswell' ),
-							'required'    => false,
+						'annotations' => array(
+							'audience' => array( 'user', 'assistant' ),
+							'priority' => 0.9,
 						),
-					),
-					'annotations' => array(
-						'audience' => array( 'user', 'assistant' ),
-						'priority' => 0.9,
-					),
-					'mcp'         => array(
-						'public' => true,
-						'type'   => 'prompt',
 					),
 				),
 			)

@@ -2,9 +2,9 @@
 
 Tags: ai, comments, persona, mcp, content  
 Contributors: hametuha, Takahashi_Fumiki  
-Tested Up to: 6.9  
-Stable Tag: 0.1.0  
-Requires at least: 6.9  
+Tested Up to: 7.0  
+Stable Tag: nightly  
+Requires at least: 7.0  
 Requires PHP: 8.1  
 License: GPLv3 or later  
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
@@ -26,7 +26,7 @@ Boswell enriches your WordPress blog with AI-powered personas that can comment o
 
 ### How It Works
 
-Boswell registers its capabilities through the [WordPress Abilities API](https://make.wordpress.org/core/tag/abilities-api/) (available in WordPress 6.9+). The [MCP Adapter](https://github.com/WordPress/mcp-adapter) plugin exposes these abilities as MCP tools, resources, and prompts.
+Boswell registers its capabilities through the [WordPress Abilities API](https://make.wordpress.org/core/tag/abilities-api/) (in core since WordPress 6.9). The [MCP Adapter](https://github.com/WordPress/mcp-adapter) plugin exposes these abilities as MCP tools, resources, and prompts.
 
 ```
 Claude Desktop ←MCP→ WordPress (MCP Adapter)
@@ -44,21 +44,26 @@ Claude Desktop ←MCP→ WordPress (MCP Adapter)
 
 ### AI Providers
 
-Boswell uses [wp-ai-client](https://github.com/WordPress/wp-ai-client) for AI text generation. You need at least one AI provider plugin installed:
+Boswell uses the WordPress AI Client (`wp_ai_client_prompt()`), which has been part of core since WordPress 7.0. You need at least one AI provider plugin installed:
 
-- [AI Provider for Anthropic](https://github.com/WordPress/ai-provider-for-anthropic) (bundled)
-- [AI Provider for OpenAI](https://github.com/WordPress/openai-ai-provider) (optional)
-- [AI Provider for Google](https://github.com/WordPress/google-ai-provider) (optional)
+- [AI Provider for Anthropic](https://github.com/WordPress/ai-provider-for-anthropic)
+- [AI Provider for OpenAI](https://github.com/WordPress/openai-ai-provider)
+- [AI Provider for Google](https://github.com/WordPress/google-ai-provider)
 
-Since WordPress 7.0, these extensions above will not be bundled.
+Each provider plugin registers itself with the core AI Client registry on activation — no extra configuration in Boswell is required.
 
 ## Installation
 
 1. Download the latest release zip from [GitHub Releases](https://github.com/hametuha/boswell/releases).
 2. Upload the zip file via **Plugins > Add New > Upload Plugin** in WordPress admin.
 3. Activate the plugin.
-4. Go to **Settings > Boswell** to configure personas.
-5. Set up your AI provider API key (e.g., `ANTHROPIC_API_KEY` constant or environment variable).
+4. Install at least one AI provider plugin (e.g. [AI Provider for Anthropic](https://wordpress.org/plugins/ai-provider-for-anthropic/)) and the [MCP Adapter](https://github.com/WordPress/mcp-adapter) plugin.
+5. Go to **Settings > Boswell** to configure personas.
+6. Set up your AI provider API key (e.g., `ANTHROPIC_API_KEY` constant or environment variable).
+
+### Upgrading from 1.x
+
+Boswell 1.x bundled the AI Client, AI Provider for Anthropic, and MCP Adapter inside `vendor/`. From 2.0.0 these are no longer bundled — they must be installed as standalone plugins (the AI Client is now part of WordPress 7.0 core). **Before upgrading a site that has 1.x installed, delete the existing `wp-content/plugins/boswell/` directory** so the old `vendor/` packages don't shadow the new core/plugin equivalents and trigger class-redeclaration fatals.
 
 ### MCP Connection
 
@@ -86,11 +91,11 @@ To connect Claude Desktop to your WordPress site:
 
 ### What WordPress version is required?
 
-WordPress 6.9 or later is required for the Abilities API.
+WordPress 7.0 or later. Boswell relies on the AI Client that shipped with WordPress 7.0 core. (The Abilities API has been part of core since 6.9.)
 
 ### Can I use multiple AI providers?
 
-Yes. Install additional AI provider plugins (OpenAI, Google) alongside the bundled Anthropic provider. WordPress will use whichever is configured.
+Yes. Install the AI provider plugins you want (Anthropic, OpenAI, Google) — each one self-registers with the core AI Client. Configure each persona to point at the provider you want to use.
 
 ### How do I create a persona?
 
@@ -104,11 +109,46 @@ Yes. Each persona can have a cron schedule (e.g., daily). Boswell will automatic
 
 See the [Wiki](https://github.com/hametuha/boswell/wiki) for details on adding custom strategies, adjusting query parameters, enriching post context, and blocking comments on specific posts or categories.
 
+## Upgrade Notice
+
+### 2.0.0
+
+Requires WordPress 7.0. Before upgrading from 1.x, **delete the existing `wp-content/plugins/boswell/` directory** so the bundled `vendor/` packages don't shadow the standalone AI Provider and MCP Adapter plugins. Install AI Provider for Anthropic and MCP Adapter separately.
+
 ## Changelog
 
-### 0.1.0
+### 2.0.0
 
-- Initial release.
+- **Breaking:** Requires WordPress 7.0 and PHP 8.1.
+- Use the core AI Client (`wp_ai_client_prompt()`) introduced in WordPress 7.0 instead of the bundled `wp-ai-client` SDK.
+- No longer bundles `wp-ai-client`, `ai-provider-for-anthropic`, or `mcp-adapter` — install them as standalone plugins.
+- Update MCP ability metadata for MCP Adapter v0.5.0 (`uri` and `annotations` moved under the `mcp` key).
+- Release zip no longer ships `vendor/`, `composer.json`, or `composer.lock`.
+
+### 1.1.0
+
+- Add strategy-based post selection and comment safety valve.
+
+### 1.0.4
+
+- Fix deploy workflow: upload zip to existing release.
+
+### 1.0.3
+
+- Fix deploy clean step failing on non-existent files.
+
+### 1.0.2
+
+- Add version resolver to release-drafter.
+- Add README.md for WordPress readme.txt.
+
+### 1.0.1
+
+- Add deploy workflow with zip release on tag push.
+
+### 1.0.0
+
+- Initial release. AI persona management, shared memory, automated commenting via WordPress cron, MCP integration via the WordPress Abilities API, post CRUD tools, and WP-CLI commands.
 - AI persona management with admin UI.
 - Shared memory system with section-based Markdown storage.
 - Automated commenting via WordPress cron.

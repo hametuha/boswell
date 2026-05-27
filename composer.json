@@ -18,17 +18,16 @@
 		}
 	],
 	"require": {
-		"php": ">=8.1",
-		"wordpress/wp-ai-client": "^0.3.0",
-		"wordpress/ai-provider-for-anthropic": "^1.0",
-		"wordpress/mcp-adapter": "^0.4.1"
+		"php": ">=8.1"
 	},
 	"suggest": {
-		"wordpress/openai-ai-provider": "AI Provider for OpenAI (GPT). Install as WP plugin or via Composer.",
-		"wordpress/google-ai-provider": "AI Provider for Google (Gemini). Install as WP plugin or via Composer."
+		"wordpress/mcp-adapter": "MCP Adapter plugin — required to expose Boswell abilities as MCP tools/resources/prompts.",
+		"wordpress/ai-provider-for-anthropic": "AI Provider for Anthropic (Claude). Install as a WordPress plugin.",
+		"wordpress/openai-ai-provider": "AI Provider for OpenAI (GPT). Install as a WordPress plugin.",
+		"wordpress/google-ai-provider": "AI Provider for Google (Gemini). Install as a WordPress plugin."
 	},
 	"require-dev": {
-		"johnpbloch/wordpress": "6.9",
+		"johnpbloch/wordpress": "^7.0",
 		"wp-coding-standards/wpcs": "^3.0",
 		"phpunit/phpunit": "^9.0",
 		"yoast/phpunit-polyfills": "^4.0",
