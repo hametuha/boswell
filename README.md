@@ -67,10 +67,7 @@ Boswell 1.x bundled the AI Client, AI Provider for Anthropic, and MCP Adapter in
 
 ### MCP Connection
 
-To connect Claude Desktop to your WordPress site:
-
-1. Install and activate the [MCP Adapter](https://github.com/WordPress/mcp-adapter) plugin.
-2. Add the MCP server to your Claude Desktop configuration:
+To connect Claude Desktop to your WordPress site, add the MCP server to your Claude Desktop configuration:
 
 ```json
 {
