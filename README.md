@@ -108,11 +108,19 @@ See the [Wiki](https://github.com/hametuha/boswell/wiki) for details on adding c
 
 ## Upgrade Notice
 
+### 2.0.1
+
+Improves the quality of Boswell's shared memory. When upgrading from 1.x, the same step as 2.0.0 still applies: **delete the existing `wp-content/plugins/boswell/` directory** before installing so the old bundled `vendor/` cannot shadow the standalone AI Provider and MCP Adapter plugins.
+
 ### 2.0.0
 
 Requires WordPress 7.0. Before upgrading from 1.x, **delete the existing `wp-content/plugins/boswell/` directory** so the bundled `vendor/` packages don't shadow the standalone AI Provider and MCP Adapter plugins. Install AI Provider for Anthropic and MCP Adapter separately.
 
 ## Changelog
+
+### 2.0.1
+
+- Improve shared-memory quality: the commentary log now stores a concise, AI-generated summary of each comment instead of a truncated snippet. Entries stay informative and no longer collapse into repeated greetings, and multi-paragraph comments can no longer break the memory list.
 
 ### 2.0.0
 
