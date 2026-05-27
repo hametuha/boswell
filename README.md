@@ -114,6 +114,10 @@ Requires WordPress 7.0. Before upgrading from 1.x, **delete the existing `wp-con
 
 ## Changelog
 
+### 2.0.1
+
+- Improve shared-memory quality: the commentary log now stores a concise, AI-generated summary of each comment instead of a truncated snippet. Entries stay informative and no longer collapse into repeated greetings, and multi-paragraph comments can no longer break the memory list.
+
 ### 2.0.0
 
 - **Breaking:** Requires WordPress 7.0 and PHP 8.1.
