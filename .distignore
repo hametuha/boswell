@@ -19,4 +19,4 @@ phpstan.neon
 phpunit.xml.dist
 tests
 vendor
-wp
+/wp
