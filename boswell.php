@@ -68,6 +68,9 @@ register_activation_hook(
 			update_option( Boswell_Memory::UPDATED_AT_KEY, gmdate( 'c' ), false );
 		}
 		Boswell_Persona::migrate();
+		// Re-establish cron schedules so automated commenting resumes after a
+		// reactivation or upgrade (the deactivation hook clears all events).
+		Boswell_Cron::sync_schedules();
 	}
 );
 

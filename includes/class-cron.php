@@ -24,6 +24,43 @@ class Boswell_Cron {
 	 */
 	public static function init(): void {
 		add_action( self::HOOK_NAME, array( __CLASS__, 'handle' ) );
+		// Self-heal: re-establish missing schedules on admin requests. The
+		// deactivation hook wipes all events, and reactivation/upgrade (e.g. the
+		// 1.x -> 2.0 directory-delete migration) does not re-save personas, so
+		// without this the automated commenting would stay silent forever.
+		add_action( 'admin_init', array( __CLASS__, 'sync_schedules' ) );
+	}
+
+	/**
+	 * Reconcile cron events with persona settings.
+	 *
+	 * Idempotent: schedules an event for every cron-enabled persona that is
+	 * missing one, and clears events for personas that have cron disabled.
+	 * Safe to call on activation and on every admin request, so automated
+	 * commenting survives plugin upgrades and reactivation that would otherwise
+	 * leave the scheduled events cleared by the deactivation hook.
+	 */
+	public static function sync_schedules(): void {
+		foreach ( Boswell_Persona::get_all() as $persona ) {
+			$persona_id = $persona['id'] ?? '';
+			if ( '' === $persona_id ) {
+				continue;
+			}
+
+			$args        = array( $persona_id );
+			$is_enabled  = ! empty( $persona['cron_enabled'] );
+			$is_schedule = (bool) wp_next_scheduled( self::HOOK_NAME, $args );
+
+			if ( $is_enabled && ! $is_schedule ) {
+				$frequency = $persona['cron_frequency'] ?? 'daily';
+				if ( ! in_array( $frequency, self::FREQUENCIES, true ) ) {
+					$frequency = 'daily';
+				}
+				wp_schedule_event( time(), $frequency, self::HOOK_NAME, $args );
+			} elseif ( ! $is_enabled && $is_schedule ) {
+				wp_clear_scheduled_hook( self::HOOK_NAME, $args );
+			}
+		}
 	}
 
 	/**
