@@ -114,6 +114,10 @@ Requires WordPress 7.0. Before upgrading from 1.x, **delete the existing `wp-con
 
 ## Changelog
 
+### 2.0.2
+
+- Fix automated commenting silently stopping after a plugin reactivation or upgrade. The deactivation hook clears all scheduled cron events, but reactivation never restored them (only saving a persona did), so the 1.x → 2.0 directory-delete migration left commenting dormant. Schedules are now reconciled on activation and self-heal on every admin request.
+
 ### 2.0.1
 
 - Improve shared-memory quality: the commentary log now stores a concise, AI-generated summary of each comment instead of a truncated snippet. Entries stay informative and no longer collapse into repeated greetings, and multi-paragraph comments can no longer break the memory list.
