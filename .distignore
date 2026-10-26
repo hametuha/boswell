@@ -1,22 +1,38 @@
-.claude
-.editorconfig
+# Version control / CI
 .git
 .github
 .gitignore
-.husky
-.mcp.json
+.distignore
+
+# Editor / environment
+.editorconfig
 .node-version
 .wp-env.json
-composer.json
-composer.lock
+.husky
+.claude
+.mcp.json
+CLAUDE.md
+
+# Node.js (not used at runtime)
 node_modules
 package.json
 package-lock.json
+
+# Composer (no runtime dependencies; vendor/ is not loaded by the plugin)
+composer.json
+composer.lock
+vendor
+
+# PHP lint / static analysis / tests
 phpcs.ruleset.xml
+phpstan.neon
 phpstan-baseline.neon
 phpstan-bootstrap.php
-phpstan.neon
 phpunit.xml.dist
 tests
-vendor
+
+# Local WordPress install for development
 /wp
+
+# Docs (readme.txt is generated from README.md at release time)
+README.md
